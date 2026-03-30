@@ -1,5 +1,8 @@
 import type { MetadataRoute } from "next";
 
+// Obrigatório para output:'export' (static export)
+export const dynamic = "force-static";
+
 export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "Pedeform",
