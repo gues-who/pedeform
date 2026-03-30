@@ -1,4 +1,4 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, Query } from '@nestjs/common';
 import { AdminService } from './admin.service';
 
 @Controller('admin')
@@ -23,5 +23,11 @@ export class AdminController {
   @Get('financeiro')
   getFinanceiro() {
     return this.adminService.getFinanceiro();
+  }
+
+  /** GET /v1/admin/orders?status=pending,preparing,almost_ready */
+  @Get('orders')
+  getOrders(@Query('status') status?: string) {
+    return this.adminService.getOrders(status);
   }
 }

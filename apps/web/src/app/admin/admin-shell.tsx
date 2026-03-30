@@ -7,9 +7,10 @@ import { motion } from "framer-motion";
 import { admin, mesaRoot } from "@/lib/routes";
 
 const nav = [
-  { href: admin.root, label: "Visão geral" },
-  { href: admin.operacao, label: "Operação" },
-  { href: admin.financeiro, label: "Financeiro" },
+  { href: admin.root, label: "Visão geral", exact: true },
+  { href: admin.operacao, label: "Operação", exact: false },
+  { href: admin.kds, label: "KDS — Cozinha", exact: false },
+  { href: admin.financeiro, label: "Financeiro", exact: false },
 ] as const;
 
 export function AdminShell({ children }: { children: ReactNode }) {
@@ -17,29 +18,33 @@ export function AdminShell({ children }: { children: ReactNode }) {
 
   return (
     <div className="flex min-h-screen flex-col bg-zinc-100 dark:bg-zinc-950 md:flex-row">
-      <aside className="border-b border-zinc-800 bg-zinc-950 text-zinc-100 md:w-56 md:shrink-0 md:border-b-0 md:border-r">
-        <div className="flex items-center justify-between gap-2 px-4 py-4 md:flex-col md:items-stretch">
+      <aside className="border-b border-zinc-800 bg-zinc-950 text-zinc-100 md:w-60 md:shrink-0 md:border-b-0 md:border-r">
+        <div className="flex items-center justify-between gap-2 px-4 py-4 md:flex-col md:items-stretch md:gap-1">
           <div>
             <p className="text-[10px] font-medium uppercase tracking-[0.2em] text-zinc-500">
               Pedeform
             </p>
-            <p className="text-sm font-semibold">Admin</p>
+            <p className="text-sm font-semibold">Painel Admin</p>
           </div>
           <Link
             href={mesaRoot("demo")}
-            className="text-xs text-zinc-500 hover:text-zinc-300 md:mt-2"
+            className="rounded-lg border border-zinc-800 px-3 py-1.5 text-xs text-zinc-400 transition-colors hover:border-zinc-600 hover:text-zinc-200 md:mt-3"
           >
-            Ver app mesa (demo)
+            Ver mesa demo →
           </Link>
         </div>
-        <nav className="flex gap-1 px-2 pb-3 md:flex-col md:px-2 md:pb-6" aria-label="Admin">
-          {nav.map(({ href, label }) => {
-            const active = pathname === href;
+
+        <nav
+          className="flex gap-1 overflow-x-auto px-2 pb-3 md:flex-col md:overflow-visible md:px-2 md:pb-6"
+          aria-label="Admin"
+        >
+          {nav.map(({ href, label, exact }) => {
+            const active = exact ? pathname === href : pathname.startsWith(href);
             return (
               <Link
                 key={href}
                 href={href}
-                className={`relative rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                className={`relative whitespace-nowrap rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
                   active
                     ? "text-white"
                     : "text-zinc-400 hover:text-zinc-200"

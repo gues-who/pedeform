@@ -23,5 +23,6 @@ export function mesaAcompanhar(mesaId: string) {
 export const admin = {
   root: "/admin",
   operacao: "/admin/operacao",
+  kds: "/admin/kds",
   financeiro: "/admin/financeiro",
 } as const;

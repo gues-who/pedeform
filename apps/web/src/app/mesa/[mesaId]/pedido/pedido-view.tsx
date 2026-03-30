@@ -4,10 +4,12 @@ import { useRouter } from "next/navigation";
 import { motion, useReducedMotion } from "framer-motion";
 import { useMesaCart } from "@/contexts/mesa-cart-context";
 import { useMesaOrders, useOrderSubmit } from "@/contexts/mesa-orders-context";
+import { useToast } from "@/contexts/toast-context";
 import { formatBRL } from "@/data/mock-menu";
 import { mesaAcompanhar } from "@/lib/routes";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Spinner } from "@/components/ui/spinner";
 
 export function PedidoView({ mesaId }: { mesaId: string }) {
   const reduceMotion = useReducedMotion();
@@ -16,6 +18,7 @@ export function PedidoView({ mesaId }: { mesaId: string }) {
     useMesaCart();
   const { submitState, submitError } = useMesaOrders();
   const submitOrder = useOrderSubmit(mesaId);
+  const toast = useToast();
 
   const isSubmitting = submitState === "submitting";
 
@@ -23,6 +26,7 @@ export function PedidoView({ mesaId }: { mesaId: string }) {
     if (lines.length === 0) return;
     try {
       await submitOrder(lines);
+      toast("Pedido enviado à cozinha!", "success");
       clear();
       router.push(mesaAcompanhar(mesaId));
     } catch {
@@ -124,8 +128,9 @@ export function PedidoView({ mesaId }: { mesaId: string }) {
               type="button"
               onClick={handleEnviar}
               disabled={isSubmitting}
-              className="w-full sm:w-auto"
+              className="w-full gap-2 sm:w-auto"
             >
+              {isSubmitting && <Spinner size="sm" />}
               {isSubmitting ? "Enviando…" : "Enviar à cozinha"}
             </Button>
           </div>

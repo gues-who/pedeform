@@ -93,3 +93,8 @@ export function fetchAdminFinanceiro(): Promise<{
 }> {
   return apiFetch("/admin/financeiro");
 }
+
+export function fetchAdminOrders(status?: string) {
+  const qs = status ? `?status=${encodeURIComponent(status)}` : "";
+  return apiFetch<Order[]>(`/admin/orders${qs}`);
+}
