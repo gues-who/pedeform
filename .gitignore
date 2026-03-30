@@ -1,0 +1,39 @@
+# ── Dependências ─────────────────────────────────────────────────────────────
+node_modules/
+
+# ── Next.js ──────────────────────────────────────────────────────────────────
+apps/web/.next/
+apps/web/out/
+apps/web/.vercel/
+
+# ── NestJS build ─────────────────────────────────────────────────────────────
+apps/api/dist/
+
+# ── Variáveis de ambiente (NUNCA commitar) ────────────────────────────────────
+.env
+.env.local
+.env*.local
+.env.production
+.env.staging
+
+# ── Logs ─────────────────────────────────────────────────────────────────────
+*.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# ── OS ───────────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+
+# ── IDEs ─────────────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+
+# ── Testes / cobertura ───────────────────────────────────────────────────────
+coverage/
+
+# ── PWA cache ────────────────────────────────────────────────────────────────
+apps/web/public/sw.js
+apps/web/public/workbox-*.js

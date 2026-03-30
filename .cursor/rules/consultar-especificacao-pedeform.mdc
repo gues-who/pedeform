@@ -1,0 +1,14 @@
+---
+description: Obriga consulta à especificação canônica antes de implementar no Pedeform
+alwaysApply: true
+---
+
+# Pedeform — Fonte da verdade
+
+Antes de implementar **qualquer** feature, endpoint, fluxo de pedido, integração (Stripe, WebSocket, AWS), modelo de dados ou tela:
+
+1. **Leia e siga** o arquivo `ESPECIFICACAO_PEDEFORM.md` na raiz do repositório.
+2. Respeite a divisão **PostgreSQL** (transacional/financeiro/cardápio) vs **MongoDB** (perfil VIP/histórico flexível), os **três módulos** (Cliente, Salão/KDS, Admin/CRM) e a stack **Next.js + NestJS** conforme o documento.
+3. Se algo não estiver coberto, estenda o domínio de forma coerente com as fronteiras já definidas e **atualize** `ESPECIFICACAO_PEDEFORM.md` ou cite um ADR novo.
+
+Não substituir tecnologias do contrato (ex.: outro framework no lugar de Nest ou Next) sem decisão explícita no projeto.

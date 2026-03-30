@@ -1,0 +1,21 @@
+{
+  "name": "pedeform",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "concurrently -n web,api -c cyan,magenta \"npm run dev -w @pedeform/web\" \"npm run start:dev -w @pedeform/api\"",
+    "dev:web": "npm run dev -w @pedeform/web",
+    "dev:api": "npm run start:dev -w @pedeform/api",
+    "build": "npm run build -w @pedeform/web && npm run build -w @pedeform/api",
+    "lint": "npm run lint -w @pedeform/web && npm run lint -w @pedeform/api"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}
