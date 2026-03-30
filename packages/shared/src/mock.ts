@@ -29,7 +29,7 @@ export const MOCK_MENU_ITEMS: SharedMenuItem[] = [
     description: "Azeite de trufa negra, rúcula e lascas de parmesão.",
     priceCents: 8900,
     sommelierNote: "Pinot Noir leve — notas terrosas equilibram a gordura.",
-    imageSrc: "/images/entradas/carpaccio-wagyu.png",
+    imageUrl: "/menu/entradas/e1-carpaccio.png",
     imageGradient: "from-amber-900/40 to-stone-900",
   },
   {
@@ -39,7 +39,7 @@ export const MOCK_MENU_ITEMS: SharedMenuItem[] = [
     description: "Manteiga cítrica e ervas finas.",
     priceCents: 6200,
     sommelierNote: "Champagne brut — acidez limpa com o mar.",
-    imageSrc: "/images/entradas/ostra-gratinada.png",
+    imageUrl: "/menu/entradas/e2-ostra.png",
     imageGradient: "from-teal-900/50 to-zinc-900",
   },
   {
@@ -49,7 +49,7 @@ export const MOCK_MENU_ITEMS: SharedMenuItem[] = [
     description: "Abacate, gergelim torrado e gengibre marinado.",
     priceCents: 7400,
     sommelierNote: "Sake ginjo — umami e frescor em sintonia.",
-    imageSrc: "/images/entradas/tartar-atum.png",
+    imageUrl: "/menu/entradas/e3-tartar.png",
     imageGradient: "from-rose-900/40 to-zinc-900",
   },
   {
@@ -59,7 +59,7 @@ export const MOCK_MENU_ITEMS: SharedMenuItem[] = [
     description: "Manjericão fresco, pesto de pistache e azeite extra virgem.",
     priceCents: 6800,
     sommelierNote: "Verdicchio — acidez e cremosidade.",
-    imageSrc: "/images/entradas/burrata-tomates.png",
+    imageUrl: "/menu/entradas/e4-burrata.png",
     imageGradient: "from-orange-950/40 to-stone-900",
   },
   // Principais
@@ -70,7 +70,6 @@ export const MOCK_MENU_ITEMS: SharedMenuItem[] = [
     description: "Batata confit e legumes glaceados.",
     priceCents: 18900,
     sommelierNote: "Bordeaux de corpo médio realça o molho de vinho tinto.",
-    imageSrc: "/images/entradas/carpaccio-wagyu.png",
     imageGradient: "from-red-950/60 to-neutral-950",
   },
   {
@@ -80,7 +79,6 @@ export const MOCK_MENU_ITEMS: SharedMenuItem[] = [
     description: "Ervas do quintal e limão siciliano.",
     priceCents: 14200,
     sommelierNote: "Branco mineral da costa — textura e salinidade.",
-    imageSrc: "/images/entradas/tartar-atum.png",
     imageGradient: "from-sky-900/40 to-zinc-950",
   },
   {
@@ -90,7 +88,6 @@ export const MOCK_MENU_ITEMS: SharedMenuItem[] = [
     description: "Parmesão envelhecido 36 meses e lâminas de trufa.",
     priceCents: 16500,
     sommelierNote: "Barolo jovem — taninos firmes com a terra do fungo.",
-    imageSrc: "/images/entradas/burrata-tomates.png",
     imageGradient: "from-yellow-950/50 to-zinc-950",
   },
   {
@@ -100,7 +97,6 @@ export const MOCK_MENU_ITEMS: SharedMenuItem[] = [
     description: "Purê de batata-doce e mini cenouras glaceadas.",
     priceCents: 17800,
     sommelierNote: "Syrah — especiarias e carne de caça.",
-    imageSrc: "/images/entradas/ostra-gratinada.png",
     imageGradient: "from-emerald-950/50 to-zinc-950",
   },
   // Sobremesas
@@ -111,7 +107,6 @@ export const MOCK_MENU_ITEMS: SharedMenuItem[] = [
     description: "Ganache 70% e sorvete de baunilha de Madagascar.",
     priceCents: 4800,
     sommelierNote: "Porto tawny — doçura e cacau em harmonia.",
-    imageSrc: "/images/entradas/carpaccio-wagyu.png",
     imageGradient: "from-amber-950/50 to-stone-950",
   },
   {
@@ -121,7 +116,6 @@ export const MOCK_MENU_ITEMS: SharedMenuItem[] = [
     description: "Caramelo crocante e flor de lavanda provençal.",
     priceCents: 3900,
     sommelierNote: "Sauternes — mel e floral prolongados.",
-    imageSrc: "/images/entradas/ostra-gratinada.png",
     imageGradient: "from-purple-950/40 to-zinc-950",
   },
   {
@@ -130,7 +124,6 @@ export const MOCK_MENU_ITEMS: SharedMenuItem[] = [
     name: "Cheesecake de frutas vermelhas",
     description: "Base de biscoito amanteigado e calda de framboesa.",
     priceCents: 4200,
-    imageSrc: "/images/entradas/tartar-atum.png",
     imageGradient: "from-fuchsia-950/40 to-zinc-950",
   },
   // Harmonizações
@@ -140,7 +133,6 @@ export const MOCK_MENU_ITEMS: SharedMenuItem[] = [
     name: "Seleção do sommelier (taça)",
     description: "Rótulo sazonal escolhido para acompanhar seu prato principal.",
     priceCents: 4500,
-    imageSrc: "/images/entradas/burrata-tomates.png",
     imageGradient: "from-violet-950/50 to-zinc-950",
   },
   {
@@ -150,7 +142,6 @@ export const MOCK_MENU_ITEMS: SharedMenuItem[] = [
     description: "Brut rosé da Serra Gaúcha servido na chegada.",
     priceCents: 3200,
     sommelierNote: "Perfeito antes de qualquer entrada.",
-    imageSrc: "/images/entradas/ostra-gratinada.png",
     imageGradient: "from-pink-950/40 to-zinc-950",
   },
   {
@@ -159,7 +150,6 @@ export const MOCK_MENU_ITEMS: SharedMenuItem[] = [
     name: "Decanter — vinho tinto premium",
     description: "Garrafa 750ml — rótulo da adega parceira.",
     priceCents: 28000,
-    imageSrc: "/images/entradas/carpaccio-wagyu.png",
     imageGradient: "from-red-950/50 to-zinc-950",
   },
 ];

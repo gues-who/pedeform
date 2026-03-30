@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
+import Image from "next/image";
 import type { MenuCategoryId, SharedMenuCategory, SharedMenuItem } from "@pedeform/shared";
 import {
   MENU_CATEGORIES as FALLBACK_CATEGORIES,
@@ -120,19 +121,22 @@ export function MenuView() {
             transition={{ delay: reduceMotion ? 0 : index * 0.04 }}
             className="overflow-hidden rounded-2xl border border-zinc-200/90 bg-white dark:border-zinc-800 dark:bg-zinc-950"
           >
-            {item.imageSrc ? (
-              <img
-                src={item.imageSrc}
-                alt={item.name}
-                className="aspect-[21/9] w-full object-cover"
-                loading="lazy"
-              />
-            ) : (
-              <div
-                className={`relative aspect-[21/9] w-full bg-gradient-to-br ${item.imageGradient}`}
-                aria-hidden
-              />
-            )}
+            <div className="relative aspect-[21/9] w-full overflow-hidden">
+              {item.imageUrl ? (
+                <Image
+                  src={item.imageUrl}
+                  alt={item.name}
+                  fill
+                  sizes="(max-width: 768px) 100vw, 640px"
+                  className="object-cover"
+                />
+              ) : (
+                <div
+                  className={`h-full w-full bg-gradient-to-br ${item.imageGradient}`}
+                  aria-hidden
+                />
+              )}
+            </div>
             <div className="space-y-3 p-4">
               <div className="flex flex-wrap items-start justify-between gap-2">
                 <div>

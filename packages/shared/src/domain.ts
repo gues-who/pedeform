@@ -13,8 +13,8 @@ export interface SharedMenuItem {
   description: string;
   priceCents: number;
   sommelierNote?: string;
-  /** Caminho público da imagem (ex.: /images/entradas/carpaccio.png). */
-  imageSrc?: string;
+  /** Caminho em /public (ex.: /menu/entradas/e1.png). */
+  imageUrl?: string;
   imageGradient: string;
 }
 
