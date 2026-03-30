@@ -69,6 +69,28 @@ export class MockDataStore {
     return order;
   }
 
+  /** Fecha a conta da mesa: todos os pedidos não pagos passam a `paid`. */
+  closeBillForMesa(mesaId: string): { orders: Order[]; totalCents: number } {
+    const updated: Order[] = [];
+    let totalCents = 0;
+    for (const o of this.orders) {
+      if (o.mesaId === mesaId && o.status !== 'paid') {
+        totalCents += o.subtotalCents;
+        o.status = 'paid';
+        o.updatedAt = new Date().toISOString();
+        updated.push(o);
+      }
+    }
+    return { orders: updated, totalCents };
+  }
+
+  /** Subtotal em aberto na mesa (pedidos ainda não pagos). */
+  openOrdersSubtotalForMesa(mesaId: string): number {
+    return this.orders
+      .filter((o) => o.mesaId === mesaId && o.status !== 'paid')
+      .reduce((s, o) => s + o.subtotalCents, 0);
+  }
+
   getKpis() {
     const occupied = this.tables.filter((t) => t.status !== 'livre');
     const activeOrders = this.orders.filter(

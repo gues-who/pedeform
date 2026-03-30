@@ -62,6 +62,17 @@ export function createOrder(mesaId: string, items: OrderItem[]) {
   });
 }
 
+/** Fecha a conta: todos os pedidos em aberto da mesa → pagos. */
+export function closeMesaBill(mesaId: string) {
+  return apiFetch<{
+    mesaId: string;
+    orders: Order[];
+    totalPaidCents: number;
+  }>(`/mesas/${encodeURIComponent(mesaId)}/pay`, {
+    method: "POST",
+  });
+}
+
 export function updateOrderStatus(orderId: string, status: OrderStatus) {
   return apiFetch<Order>(`/orders/${encodeURIComponent(orderId)}/status`, {
     method: "PATCH",

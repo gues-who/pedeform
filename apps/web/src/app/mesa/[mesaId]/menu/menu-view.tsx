@@ -1,20 +1,81 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
-import { MENU_CATEGORIES, MENU_ITEMS, formatBRL, type MenuCategoryId } from "@/data/mock-menu";
+import type { MenuCategoryId, SharedMenuCategory, SharedMenuItem } from "@pedeform/shared";
+import {
+  MENU_CATEGORIES as FALLBACK_CATEGORIES,
+  MENU_ITEMS as FALLBACK_ITEMS,
+  formatBRL,
+} from "@/data/mock-menu";
 import { useMesaCart } from "@/contexts/mesa-cart-context";
+import { fetchMenuCategories, fetchMenuItems } from "@/lib/api-client";
 import { Button } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/spinner";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export function MenuView() {
   const reduceMotion = useReducedMotion();
+  const [categories, setCategories] =
+    useState<SharedMenuCategory[]>(FALLBACK_CATEGORIES);
+  const [catalog, setCatalog] = useState<SharedMenuItem[]>(FALLBACK_ITEMS);
+  const [loading, setLoading] = useState(true);
+  const [usedApi, setUsedApi] = useState(false);
+
   const [cat, setCat] = useState<MenuCategoryId>("entradas");
   const { addLine } = useMesaCart();
 
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const [cats, items] = await Promise.all([
+          fetchMenuCategories(),
+          fetchMenuItems(),
+        ]);
+        if (!cancelled && cats.length && items.length) {
+          setCategories(cats);
+          setCatalog(items);
+          setUsedApi(true);
+          setCat((prev) =>
+            cats.some((c) => c.id === prev) ? prev : cats[0]!.id,
+          );
+        }
+      } catch {
+        /* fallback local já aplicado */
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const items = useMemo(
-    () => MENU_ITEMS.filter((i) => i.category === cat),
-    [cat],
+    () => catalog.filter((i) => i.category === cat),
+    [catalog, cat],
   );
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <Skeleton className="h-8 w-40" />
+        <div className="flex flex-wrap gap-2">
+          {[1, 2, 3, 4].map((i) => (
+            <Skeleton key={i} className="h-9 w-24 rounded-full" />
+          ))}
+        </div>
+        <div className="flex items-center gap-2 text-sm text-zinc-500">
+          <Spinner size="sm" />
+          Carregando cardápio…
+        </div>
+        {[1, 2, 3].map((i) => (
+          <Skeleton key={i} className="h-40 w-full rounded-2xl" />
+        ))}
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -23,13 +84,18 @@ export function MenuView() {
           Cardápio
         </h1>
         <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
-          Toque para adicionar ao pedido. Harmonizações do sommelier quando
-          disponíveis.
+          Toque para adicionar ao pedido.
+          {usedApi ? (
+            <span className="text-emerald-600 dark:text-emerald-400">
+              {" "}
+              · Sincronizado com a API
+            </span>
+          ) : null}
         </p>
       </div>
 
       <div className="flex flex-wrap gap-2">
-        {MENU_CATEGORIES.map((c) => (
+        {categories.map((c) => (
           <button
             key={c.id}
             type="button"

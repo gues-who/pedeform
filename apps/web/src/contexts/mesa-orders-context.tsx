@@ -10,16 +10,31 @@ import {
   type ReactNode,
 } from "react";
 import type { Order } from "@pedeform/shared";
-import { connectSocket, disconnectSocket } from "@/lib/socket-client";
+import { fetchOrdersByMesa } from "@/lib/api-client";
+import { pickOrderForTracking } from "@/lib/order-utils";
+import { connectSocket } from "@/lib/socket-client";
 
 type SubmitState = "idle" | "submitting" | "success" | "error";
 
+function upsertOrder(list: Order[], o: Order): Order[] {
+  const i = list.findIndex((x) => x.id === o.id);
+  if (i === -1) return [o, ...list];
+  const next = [...list];
+  next[i] = o;
+  return next;
+}
+
 type MesaOrdersContextValue = {
-  /** Pedido ativo mais recente enviado à cozinha. */
+  mesaId: string;
+  /** Todos os pedidos da mesa (API). */
+  allOrders: Order[];
+  /** Pedido exibido em Acompanhar — último em aberto. */
   currentOrder: Order | null;
+  ordersLoading: boolean;
+  ordersError: string | null;
+  refreshOrders: () => Promise<void>;
   submitState: SubmitState;
   submitError: string | null;
-  setCurrentOrder: (order: Order) => void;
   setSubmitState: (s: SubmitState) => void;
   setSubmitError: (e: string | null) => void;
 };
@@ -33,26 +48,49 @@ export function MesaOrdersProvider({
   mesaId: string;
   children: ReactNode;
 }) {
-  const [currentOrder, setCurrentOrder] = useState<Order | null>(null);
+  const [allOrders, setAllOrders] = useState<Order[]>([]);
+  const [ordersLoading, setOrdersLoading] = useState(true);
+  const [ordersError, setOrdersError] = useState<string | null>(null);
   const [submitState, setSubmitState] = useState<SubmitState>("idle");
   const [submitError, setSubmitError] = useState<string | null>(null);
 
+  const refreshOrders = useCallback(async () => {
+    try {
+      const list = await fetchOrdersByMesa(mesaId);
+      setAllOrders(list);
+      setOrdersError(null);
+    } catch (e) {
+      const msg =
+        e instanceof Error ? e.message : "Não foi possível carregar pedidos.";
+      setOrdersError(msg);
+      setAllOrders([]);
+    } finally {
+      setOrdersLoading(false);
+    }
+  }, [mesaId]);
+
+  useEffect(() => {
+    refreshOrders();
+  }, [refreshOrders]);
+
+  const currentOrder = useMemo(
+    () => pickOrderForTracking(allOrders),
+    [allOrders],
+  );
+
   useEffect(() => {
     const socket = connectSocket();
-
     socket.emit("join-room", { room: `mesa:${mesaId}` });
 
     const handleOrderCreated = (order: Order) => {
-      if (order.mesaId === mesaId) {
-        setCurrentOrder(order);
-        setSubmitState("success");
-      }
+      if (order.mesaId !== mesaId) return;
+      setAllOrders((prev) => upsertOrder(prev, order));
+      setSubmitState("success");
     };
 
     const handleOrderUpdated = (order: Order) => {
-      if (order.mesaId === mesaId) {
-        setCurrentOrder(order);
-      }
+      if (order.mesaId !== mesaId) return;
+      setAllOrders((prev) => upsertOrder(prev, order));
     };
 
     socket.on("order.created", handleOrderCreated);
@@ -65,22 +103,29 @@ export function MesaOrdersProvider({
     };
   }, [mesaId]);
 
-  useEffect(() => {
-    return () => {
-      disconnectSocket();
-    };
-  }, []);
-
   const value = useMemo(
     () => ({
+      mesaId,
+      allOrders,
       currentOrder,
+      ordersLoading,
+      ordersError,
+      refreshOrders,
       submitState,
       submitError,
-      setCurrentOrder,
       setSubmitState,
       setSubmitError,
     }),
-    [currentOrder, submitState, submitError],
+    [
+      mesaId,
+      allOrders,
+      currentOrder,
+      ordersLoading,
+      ordersError,
+      refreshOrders,
+      submitState,
+      submitError,
+    ],
   );
 
   return (
@@ -101,18 +146,24 @@ export function useMesaOrders() {
 }
 
 export function useOrderSubmit(mesaId: string) {
-  const { setCurrentOrder, setSubmitState, setSubmitError } = useMesaOrders();
+  const { refreshOrders, setSubmitState, setSubmitError } = useMesaOrders();
 
   return useCallback(
-    async (items: { menuItemId: string; name: string; unitPriceCents: number; quantity: number }[]) => {
+    async (
+      items: {
+        menuItemId: string;
+        name: string;
+        unitPriceCents: number;
+        quantity: number;
+      }[],
+    ) => {
       setSubmitState("submitting");
       setSubmitError(null);
       try {
         const { createOrder } = await import("@/lib/api-client");
-        const order = await createOrder(mesaId, items);
-        setCurrentOrder(order);
+        await createOrder(mesaId, items);
+        await refreshOrders();
         setSubmitState("success");
-        return order;
       } catch (err) {
         const msg =
           err instanceof Error ? err.message : "Erro ao enviar pedido";
@@ -121,6 +172,6 @@ export function useOrderSubmit(mesaId: string) {
         throw err;
       }
     },
-    [mesaId, setCurrentOrder, setSubmitState, setSubmitError],
+    [mesaId, refreshOrders, setSubmitState, setSubmitError],
   );
 }

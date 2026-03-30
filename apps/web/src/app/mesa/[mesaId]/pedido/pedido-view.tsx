@@ -2,8 +2,10 @@
 
 import { useRouter } from "next/navigation";
 import { motion, useReducedMotion } from "framer-motion";
+import { ORDER_STATUS_LABEL } from "@pedeform/shared";
 import { useMesaCart } from "@/contexts/mesa-cart-context";
 import { useMesaOrders, useOrderSubmit } from "@/contexts/mesa-orders-context";
+import { sortOrdersByActivity } from "@/lib/order-utils";
 import { useToast } from "@/contexts/toast-context";
 import { formatBRL } from "@/data/mock-menu";
 import { mesaAcompanhar } from "@/lib/routes";
@@ -16,7 +18,8 @@ export function PedidoView({ mesaId }: { mesaId: string }) {
   const router = useRouter();
   const { lines, setQuantity, removeLine, subtotalCents, itemCount, clear } =
     useMesaCart();
-  const { submitState, submitError } = useMesaOrders();
+  const { submitState, submitError, allOrders, ordersLoading } = useMesaOrders();
+  const recentOrders = sortOrdersByActivity(allOrders).slice(0, 5);
   const submitOrder = useOrderSubmit(mesaId);
   const toast = useToast();
 
@@ -44,6 +47,34 @@ export function PedidoView({ mesaId }: { mesaId: string }) {
           Revise os itens antes de enviar à cozinha.
         </p>
       </div>
+
+      {recentOrders.length > 0 && (
+        <Card className="border-zinc-200/80 dark:border-zinc-800">
+          <p className="text-xs font-medium uppercase tracking-wider text-zinc-500">
+            Pedidos recentes (mesa)
+          </p>
+          {ordersLoading ? (
+            <p className="mt-2 text-sm text-zinc-500">Carregando…</p>
+          ) : (
+            <ul className="mt-3 space-y-2 text-sm">
+              {recentOrders.map((o) => (
+                <li
+                  key={o.id}
+                  className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-zinc-50 px-3 py-2 dark:bg-zinc-900/80"
+                >
+                  <span className="font-mono text-xs text-zinc-500">{o.id}</span>
+                  <span className="rounded-full bg-zinc-200 px-2 py-0.5 text-xs font-medium dark:bg-zinc-800">
+                    {ORDER_STATUS_LABEL[o.status]}
+                  </span>
+                  <span className="w-full text-right text-xs tabular-nums text-zinc-600 dark:text-zinc-400 sm:w-auto">
+                    {formatBRL(o.subtotalCents)}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Card>
+      )}
 
       {lines.length === 0 ? (
         <Card className="text-center text-sm text-zinc-600 dark:text-zinc-400">

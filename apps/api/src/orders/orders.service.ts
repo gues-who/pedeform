@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import type { OrderItem, OrderStatus } from '@pedeform/shared';
 import { MockDataStore } from '../mock/mock-data.store';
 import { RealtimeGateway } from '../realtime/realtime.gateway';
@@ -21,6 +25,25 @@ export class OrdersService {
   }
 
   createOrder(mesaId: string, items: OrderItem[]) {
+    if (!items?.length) {
+      throw new BadRequestException('Envie ao menos um item no pedido.');
+    }
+    for (const it of items) {
+      if (!it.menuItemId?.trim() || !it.name?.trim()) {
+        throw new BadRequestException('Cada item precisa de menuItemId e name.');
+      }
+      if (it.quantity < 1 || !Number.isFinite(it.quantity)) {
+        throw new BadRequestException('Quantidade inválida.');
+      }
+      if (it.unitPriceCents < 0 || !Number.isFinite(it.unitPriceCents)) {
+        throw new BadRequestException('Preço inválido.');
+      }
+    }
+    const table = this.store.findTable(mesaId);
+    if (!table) {
+      throw new BadRequestException(`Mesa ${mesaId} não encontrada.`);
+    }
+
     const order = this.store.createOrder(mesaId, items);
     this.realtime.emitToRoom(`mesa:${mesaId}`, 'order.created', order);
     this.realtime.emitToRoom('admin', 'order.created', order);
@@ -34,6 +57,19 @@ export class OrdersService {
     this.realtime.emitToRoom(`mesa:${order.mesaId}`, 'order.updated', order);
     this.realtime.emitToRoom('admin', 'order.updated', order);
     return order;
+  }
+
+  /** Fecha conta: marca todos os pedidos em aberto da mesa como pagos. */
+  closeBillForMesa(mesaId: string) {
+    const { orders, totalCents } = this.store.closeBillForMesa(mesaId);
+    if (orders.length === 0) {
+      throw new BadRequestException('Não há pedidos em aberto para esta mesa.');
+    }
+    for (const order of orders) {
+      this.realtime.emitToRoom(`mesa:${mesaId}`, 'order.updated', order);
+      this.realtime.emitToRoom('admin', 'order.updated', order);
+    }
+    return { mesaId, orders, totalPaidCents: totalCents };
   }
 
   /** Simula a progressão automática de status da cozinha. */

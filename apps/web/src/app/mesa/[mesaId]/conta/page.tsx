@@ -5,6 +5,11 @@ export const metadata: Metadata = {
   title: "Conta",
 };
 
-export default function ContaPage() {
-  return <ContaView />;
+export default async function ContaPage({
+  params,
+}: {
+  params: Promise<{ mesaId: string }>;
+}) {
+  const { mesaId } = await params;
+  return <ContaView mesaId={mesaId} />;
 }

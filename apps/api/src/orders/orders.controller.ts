@@ -34,6 +34,12 @@ export class OrdersController {
     return this.ordersService.createOrder(mesaId, dto.items);
   }
 
+  /** Fecha a conta (todos os pedidos em aberto → pagos). Stripe virá depois. */
+  @Post('mesas/:mesaId/pay')
+  closeBill(@Param('mesaId') mesaId: string) {
+    return this.ordersService.closeBillForMesa(mesaId);
+  }
+
   @Get('orders/:orderId')
   getOrder(@Param('orderId') orderId: string) {
     return this.ordersService.getOrder(orderId);
