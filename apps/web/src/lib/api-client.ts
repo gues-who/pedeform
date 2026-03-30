@@ -21,6 +21,10 @@ function getApiBase(): string {
   if (fromEnv?.trim()) return fromEnv.replace(/\/$/, "");
 
   if (typeof window !== "undefined") {
+    // next dev: sempre proxy (hostname pode ser 192.168.x.x no celular na rede)
+    if (process.env.NODE_ENV === "development") {
+      return "/api";
+    }
     const h = window.location.hostname;
     if (h === "localhost" || h === "127.0.0.1") {
       return "/api";
