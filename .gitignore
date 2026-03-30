@@ -9,6 +9,9 @@ apps/web/.vercel/
 # ── NestJS build ─────────────────────────────────────────────────────────────
 apps/api/dist/
 
+# ── Shared package build ─────────────────────────────────────────────────────
+packages/shared/dist/
+
 # ── Variáveis de ambiente (NUNCA commitar) ────────────────────────────────────
 .env
 .env.local

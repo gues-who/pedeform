@@ -18,7 +18,7 @@ const KDS_STATUSES: OrderStatus[] = ["pending", "preparing", "almost_ready"];
 
 const STATUS_TONE: Record<OrderStatus, "neutral" | "warning" | "success" | "danger"> = {
   pending: "warning",
-  preparing: "info" as never,
+  preparing: "neutral",
   almost_ready: "success",
   served: "neutral",
   paid: "neutral",

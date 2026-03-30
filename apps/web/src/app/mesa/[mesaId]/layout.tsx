@@ -8,6 +8,12 @@ export function generateStaticParams() {
     { mesaId: "2" },
     { mesaId: "3" },
     { mesaId: "4" },
+    { mesaId: "5" },
+    { mesaId: "6" },
+    { mesaId: "7" },
+    { mesaId: "8" },
+    { mesaId: "9" },
+    { mesaId: "10" },
     { mesaId: "vip" },
   ];
 }
