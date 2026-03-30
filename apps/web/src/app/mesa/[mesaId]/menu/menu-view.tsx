@@ -20,6 +20,7 @@ export function MenuView() {
   const [categories, setCategories] =
     useState<SharedMenuCategory[]>(FALLBACK_CATEGORIES);
   const [catalog, setCatalog] = useState<SharedMenuItem[]>(FALLBACK_ITEMS);
+  const [failedImages, setFailedImages] = useState<Record<string, true>>({});
   const [loading, setLoading] = useState(true);
   const [usedApi, setUsedApi] = useState(false);
 
@@ -122,13 +123,19 @@ export function MenuView() {
             className="overflow-hidden rounded-2xl border border-zinc-200/90 bg-white dark:border-zinc-800 dark:bg-zinc-950"
           >
             <div className="relative aspect-[21/9] w-full overflow-hidden">
-              {item.imageUrl ? (
+              {item.imageUrl && !failedImages[item.id] ? (
                 <Image
                   src={item.imageUrl}
                   alt={item.name}
                   fill
                   sizes="(max-width: 768px) 100vw, 640px"
                   className="object-cover"
+                  onError={() =>
+                    setFailedImages((prev) => {
+                      if (prev[item.id]) return prev;
+                      return { ...prev, [item.id]: true };
+                    })
+                  }
                 />
               ) : (
                 <div
