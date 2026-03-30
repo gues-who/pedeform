@@ -14,24 +14,19 @@ import type {
 /**
  * Base da API REST.
  * - `NEXT_PUBLIC_API_URL` definido → usa (produção / URL pública).
- * - Browser em `localhost` / `127.0.0.1` sem env → `/api` (proxy Next → Nest,
- *   evita CORS e "Failed to fetch" entre portas).
- * - Demais casos (ex.: GitHub Pages) → fallback (geralmente falha sem API pública).
+ * - Browser sem env → prioriza `/api` (proxy Next → Nest), evitando CORS e
+ *   "Failed to fetch" entre portas e hosts.
+ * - Em GitHub Pages (sem servidor Next), mantém fallback local para forçar
+ *   o aviso de configuração de URL pública.
  */
 function getApiBase(): string {
   const fromEnv = process.env.NEXT_PUBLIC_API_URL;
   if (fromEnv?.trim()) return fromEnv.replace(/\/$/, "");
 
   if (typeof window !== "undefined") {
-    // next dev: sempre proxy (hostname pode ser 192.168.x.x no celular na rede)
-    if (process.env.NODE_ENV === "development") {
-      return "/api";
-    }
     const h = window.location.hostname;
-    if (h === "localhost" || h === "127.0.0.1") {
-      return "/api";
-    }
-    return "http://127.0.0.1:3001/v1";
+    if (h.endsWith("github.io")) return "http://127.0.0.1:3001/v1";
+    return "/api";
   }
 
   return (

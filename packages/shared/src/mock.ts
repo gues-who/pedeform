@@ -140,6 +140,7 @@ export const MOCK_MENU_ITEMS: SharedMenuItem[] = [
     name: "Seleção do sommelier (taça)",
     description: "Rótulo sazonal escolhido para acompanhar seu prato principal.",
     priceCents: 4500,
+    imageUrl: "/menu/harmonizacoes/h1-escolha.jpeg",
     imageGradient: "from-violet-950/50 to-zinc-950",
   },
   {
@@ -149,6 +150,7 @@ export const MOCK_MENU_ITEMS: SharedMenuItem[] = [
     description: "Brut rosé da Serra Gaúcha servido na chegada.",
     priceCents: 3200,
     sommelierNote: "Perfeito antes de qualquer entrada.",
+    imageUrl: "/menu/harmonizacoes/h2-espumante.webp",
     imageGradient: "from-pink-950/40 to-zinc-950",
   },
   {
@@ -157,6 +159,7 @@ export const MOCK_MENU_ITEMS: SharedMenuItem[] = [
     name: "Decanter — vinho tinto premium",
     description: "Garrafa 750ml — rótulo da adega parceira.",
     priceCents: 28000,
+    imageUrl: "/menu/harmonizacoes/h3-decante.jpg",
     imageGradient: "from-red-950/50 to-zinc-950",
   },
 ];

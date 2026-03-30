@@ -4,6 +4,7 @@
 export {
   MOCK_KPIS_FALLBACK as mockKpis,
   MOCK_FINANCEIRO_SERIES as mockFinanceiroSeries,
+  MOCK_SEED_ORDERS as mockAdminOrders,
   MOCK_TABLES as mockMesas,
 } from "@pedeform/shared";
 

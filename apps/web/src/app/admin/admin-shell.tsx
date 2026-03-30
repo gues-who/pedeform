@@ -9,6 +9,7 @@ import { admin, clienteRoot } from "@/lib/routes";
 const nav = [
   { href: admin.root, label: "Visão geral", exact: true },
   { href: admin.operacao, label: "Operação", exact: false },
+  { href: admin.pedidos, label: "Pedidos", exact: false },
   { href: admin.kds, label: "KDS — Cozinha", exact: false },
   { href: admin.financeiro, label: "Financeiro", exact: false },
   { href: admin.produtos, label: "Produtos", exact: false },

@@ -31,6 +31,7 @@ export const reservas = {
 export const admin = {
   root: "/admin",
   operacao: "/admin/operacao",
+  pedidos: "/admin/pedidos",
   kds: "/admin/kds",
   financeiro: "/admin/financeiro",
   produtos: "/admin/produtos",
