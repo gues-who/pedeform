@@ -32,7 +32,6 @@ export function MenuView() {
   const [catalog, setCatalog] = useState<SharedMenuItem[]>(FALLBACK_ITEMS);
   const [failedImages, setFailedImages] = useState<Record<string, true>>({});
   const [loading, setLoading] = useState(true);
-  const [usedApi, setUsedApi] = useState(false);
 
   const [cat, setCat] = useState<MenuCategoryId>("entradas");
   const { addLine } = useMesaCart();
@@ -48,7 +47,6 @@ export function MenuView() {
         if (!cancelled && cats.length && items.length) {
           setCategories(cats);
           setCatalog(items);
-          setUsedApi(true);
           setCat((prev) =>
             cats.some((c) => c.id === prev) ? prev : cats[0]!.id,
           );
@@ -97,12 +95,6 @@ export function MenuView() {
         </h1>
         <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
           Toque para adicionar ao pedido.
-          {usedApi ? (
-            <span className="text-emerald-600 dark:text-emerald-400">
-              {" "}
-              · Sincronizado com a API
-            </span>
-          ) : null}
         </p>
       </div>
 

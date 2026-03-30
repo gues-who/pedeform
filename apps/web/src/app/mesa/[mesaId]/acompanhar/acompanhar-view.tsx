@@ -52,7 +52,7 @@ export function AcompanharView({ mesaId }: { mesaId: string }) {
           Acompanhar
         </h1>
         <Card className="text-sm text-amber-800 dark:text-amber-200">
-          {ordersError} — verifique se a API está em execução.
+          {ordersError}
         </Card>
       </div>
     );
@@ -187,14 +187,7 @@ export function AcompanharView({ mesaId }: { mesaId: string }) {
       </Card>
 
       <p className="text-center text-xs text-zinc-500">
-        Atualização em tempo real via{" "}
-        <code className="rounded bg-zinc-200 px-1 dark:bg-zinc-800">
-          order.updated
-        </code>{" "}
-        · namespace{" "}
-        <code className="rounded bg-zinc-200 px-1 dark:bg-zinc-800">
-          /realtime
-        </code>
+        Atualização automática do status do pedido.
       </p>
     </div>
   );

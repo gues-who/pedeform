@@ -73,7 +73,6 @@ export default function AdminProdutosPage() {
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [isLive, setIsLive] = useState(true);
 
   const [form, setForm] = useState<ProductFormState>(DEFAULT_FORM);
   const [saving, setSaving] = useState(false);
@@ -98,9 +97,7 @@ export default function AdminProdutosPage() {
     try {
       const data = await fetchMenuItems();
       setItems(data);
-      setIsLive(true);
     } catch (e) {
-      setIsLive(false);
       setError(e instanceof Error ? e.message : "Falha ao carregar produtos.");
     } finally {
       setLoading(false);
@@ -246,7 +243,7 @@ export default function AdminProdutosPage() {
             Adicione, edite, exclua e envie fotos dos itens do cardápio.
           </p>
         </div>
-        <Badge tone={isLive ? "success" : "warning"}>{isLive ? "API ao vivo" : "API indisponível"}</Badge>
+        <Badge tone="success">Mock ativo</Badge>
       </header>
 
       {message ? (

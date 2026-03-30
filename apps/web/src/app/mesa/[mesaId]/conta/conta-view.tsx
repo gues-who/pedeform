@@ -9,7 +9,6 @@ import { useToast } from "@/contexts/toast-context";
 import { formatBRL } from "@/data/mock-menu";
 import Link from "next/link";
 import { closeMesaBill } from "@/lib/api-client";
-import { closeLocalMesaBill } from "@/lib/local-orders";
 import { isOrderOpen } from "@/lib/order-utils";
 import { mesaPedido } from "@/lib/routes";
 import { Button } from "@/components/ui/button";
@@ -83,19 +82,7 @@ export function ContaView({ mesaId }: { mesaId: string }) {
     } catch (e) {
       const msg =
         e instanceof Error ? e.message : "Não foi possível registrar o pagamento.";
-      const offline =
-        msg.includes("Não foi possível conectar à API") ||
-        msg.includes("Failed to fetch");
-      if (offline) {
-        const res = closeLocalMesaBill(mesaId);
-        await refreshOrders();
-        toast(
-          `Conta paga (modo demo offline) — ${formatBRL(res.totalPaidCents)}`,
-          "success",
-        );
-      } else {
-        toast(msg, "error");
-      }
+      toast(msg, "error");
     } finally {
       setPaying(false);
     }
@@ -119,7 +106,7 @@ export function ContaView({ mesaId }: { mesaId: string }) {
         </p>
       )}
 
-      {/* Pedidos na API */}
+      {/* Pedidos enviados */}
       <Card>
         <CardTitle>Pedidos enviados</CardTitle>
         {openOrders.length === 0 ? (
@@ -299,7 +286,7 @@ export function ContaView({ mesaId }: { mesaId: string }) {
       <Card className="space-y-4">
         <CardTitle>Pagamento</CardTitle>
         <p className="text-sm text-zinc-600 dark:text-zinc-400">
-          Simula fechamento de conta no back-end (Stripe depois). Só registra
+          Simula fechamento da conta no modo mock (Stripe depois). Só registra
           pedidos já enviados à cozinha.
         </p>
         <Button

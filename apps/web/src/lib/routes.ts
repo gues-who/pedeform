@@ -1,4 +1,4 @@
-/** Construtores de rotas — manter centralizado para alinhar links e futura API. */
+/** Construtores de rotas — manter centralizado para alinhar links da aplicação. */
 
 export function mesaRoot(mesaId: string) {
   return `/mesa/${encodeURIComponent(mesaId)}`;

@@ -31,7 +31,7 @@ function upsertOrder(list: Order[], o: Order): Order[] {
 
 type MesaOrdersContextValue = {
   mesaId: string;
-  /** Todos os pedidos da mesa (API). */
+  /** Todos os pedidos da mesa. */
   allOrders: Order[];
   /** Pedido exibido em Acompanhar — último em aberto. */
   currentOrder: Order | null;
@@ -179,34 +179,24 @@ export function useOrderSubmit(mesaId: string) {
         await refreshOrders();
         setSubmitState("success");
         return created;
-      } catch (err) {
-        const msg =
-          err instanceof Error ? err.message : "Erro ao enviar pedido";
-        const offline =
-          msg.includes("Não foi possível conectar à API") ||
-          msg.includes("Failed to fetch");
-        if (offline) {
-          const local = createLocalOrder(mesaId, items);
-          upsertOrderLocal(local);
-          // Simula progresso de cozinha no modo offline.
-          const timeline = [
-            { status: "preparing" as const, delay: 6000 },
-            { status: "almost_ready" as const, delay: 14000 },
-            { status: "served" as const, delay: 24000 },
-          ];
-          for (const t of timeline) {
-            window.setTimeout(() => {
-              const updated = updateLocalOrderStatus(mesaId, local.id, t.status);
-              if (updated) upsertOrderLocal(updated);
-            }, t.delay);
-          }
-          setSubmitState("success");
-          setSubmitError(null);
-          return local;
+      } catch {
+        const local = createLocalOrder(mesaId, items);
+        upsertOrderLocal(local);
+        // Simula progresso de cozinha no modo local.
+        const timeline = [
+          { status: "preparing" as const, delay: 6000 },
+          { status: "almost_ready" as const, delay: 14000 },
+          { status: "served" as const, delay: 24000 },
+        ];
+        for (const t of timeline) {
+          window.setTimeout(() => {
+            const updated = updateLocalOrderStatus(mesaId, local.id, t.status);
+            if (updated) upsertOrderLocal(updated);
+          }, t.delay);
         }
-        setSubmitError(msg);
-        setSubmitState("error");
-        throw err;
+        setSubmitState("success");
+        setSubmitError(null);
+        return local;
       }
     },
     [

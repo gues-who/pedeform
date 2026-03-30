@@ -10,73 +10,143 @@ import type {
   TableReservation,
   Table,
 } from "@pedeform/shared";
+import {
+  MOCK_FINANCEIRO_SERIES,
+  MOCK_MENU_CATEGORIES,
+  MOCK_MENU_ITEMS,
+  MOCK_SEED_ORDERS,
+  MOCK_TABLES,
+} from "@pedeform/shared";
 
-/**
- * Base da API REST.
- * - `NEXT_PUBLIC_API_URL` definido → usa (produção / URL pública).
- * - Browser sem env → prioriza `/api` (proxy Next → Nest), evitando CORS e
- *   "Failed to fetch" entre portas e hosts.
- * - Em GitHub Pages (sem servidor Next), mantém fallback local para forçar
- *   o aviso de configuração de URL pública.
- */
-function getApiBase(): string {
-  const fromEnv = process.env.NEXT_PUBLIC_API_URL;
-  if (fromEnv?.trim()) return fromEnv.replace(/\/$/, "");
+type LocalDb = {
+  menuItems: SharedMenuItem[];
+  tables: Table[];
+  reservations: TableReservation[];
+  orders: Order[];
+};
 
-  if (typeof window !== "undefined") {
-    const h = window.location.hostname;
-    if (h.endsWith("github.io")) return "http://127.0.0.1:3001/v1";
-    return "/api";
-  }
+const DB_KEY = "pedeform.mock.db.v1";
 
-  return (
-    process.env.API_BASE_URL?.replace(/\/$/, "") ?? "http://127.0.0.1:3001/v1"
-  );
+function clone<T>(value: T): T {
+  if (typeof structuredClone === "function") return structuredClone(value);
+  return JSON.parse(JSON.stringify(value)) as T;
 }
 
-async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
-  const base = getApiBase();
-  const url = `${base}${path.startsWith("/") ? path : `/${path}`}`;
+function createSeedDb(): LocalDb {
+  return {
+    menuItems: clone(MOCK_MENU_ITEMS),
+    tables: clone(MOCK_TABLES),
+    reservations: [],
+    orders: clone(MOCK_SEED_ORDERS),
+  };
+}
 
-  let res: Response;
+let memoryDb: LocalDb = createSeedDb();
+
+function readDb(): LocalDb {
+  if (typeof window === "undefined") return memoryDb;
   try {
-    res = await fetch(url, {
-      headers: { "Content-Type": "application/json" },
-      ...init,
-    });
-  } catch (e) {
-    const onLocal =
-      typeof window !== "undefined" &&
-      (window.location.hostname === "localhost" ||
-        window.location.hostname === "127.0.0.1");
-    const hint = onLocal
-      ? " Confirme que a API está em http://127.0.0.1:3001 (ex.: npm run dev na raiz do monorepo)."
-      : " Defina NEXT_PUBLIC_API_URL com a URL pública da API.";
-    throw new Error(
-      e instanceof Error && e.message === "Failed to fetch"
-        ? `Não foi possível conectar à API.${hint}`
-        : e instanceof Error
-          ? e.message
-          : "Erro de rede",
-    );
+    const raw = window.localStorage.getItem(DB_KEY);
+    if (!raw) {
+      window.localStorage.setItem(DB_KEY, JSON.stringify(memoryDb));
+      return memoryDb;
+    }
+    const parsed = JSON.parse(raw) as LocalDb;
+    if (!parsed?.menuItems || !parsed?.tables || !parsed?.orders || !parsed?.reservations) {
+      window.localStorage.setItem(DB_KEY, JSON.stringify(memoryDb));
+      return memoryDb;
+    }
+    memoryDb = parsed;
+    return parsed;
+  } catch {
+    return memoryDb;
   }
+}
 
-  if (!res.ok) {
-    const body = await res.text().catch(() => "");
-    throw new Error(`API ${res.status}: ${body || res.statusText}`);
-  }
-  return res.json() as Promise<T>;
+function writeDb(next: LocalDb) {
+  memoryDb = next;
+  if (typeof window === "undefined") return;
+  window.localStorage.setItem(DB_KEY, JSON.stringify(next));
+}
+
+async function simulate<T>(value: T): Promise<T> {
+  return Promise.resolve(clone(value));
+}
+
+function nextOrderId(orders: Order[]) {
+  const max = orders.reduce((acc, order) => {
+    const match = order.id.match(/order_(\d+)/);
+    if (!match) return acc;
+    return Math.max(acc, Number(match[1]));
+  }, 0);
+  return `order_${String(max + 1).padStart(4, "0")}`;
+}
+
+function nextReservationId(reservations: TableReservation[]) {
+  const max = reservations.reduce((acc, reservation) => {
+    const match = reservation.id.match(/reservation_(\d+)/);
+    if (!match) return acc;
+    return Math.max(acc, Number(match[1]));
+  }, 0);
+  return `reservation_${String(max + 1).padStart(4, "0")}`;
+}
+
+function slugifyName(name: string) {
+  const slug = name
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+  return slug || `item-${Date.now()}`;
+}
+
+function getKpis(db: LocalDb): AdminKpis {
+  const occupied = db.tables.filter((t) => t.status !== "livre");
+  const activeOrders = db.orders.filter(
+    (o) => o.status !== "paid" && o.status !== "served",
+  );
+  const paidOrders = db.orders.filter((o) => o.status === "paid");
+  const faturamento = paidOrders.reduce((s, o) => s + o.subtotalCents, 0);
+  const ticketMedio =
+    paidOrders.length > 0 ? Math.round(faturamento / paidOrders.length) : 21500;
+  const permanencias = occupied
+    .map((t) => t.tempoMinutos ?? 0)
+    .filter((m) => m > 0);
+  const permanenciaMedia =
+    permanencias.length > 0
+      ? Math.round(permanencias.reduce((a, b) => a + b, 0) / permanencias.length)
+      : 58;
+
+  return {
+    mesasOcupadas: occupied.length,
+    mesasTotal: db.tables.length,
+    pedidosAtivos: activeOrders.length,
+    ticketMedioCents: ticketMedio,
+    faturamentoHojeCents: faturamento > 0 ? faturamento : 428900,
+    permanenciaMediaMin: permanenciaMedia,
+  };
+}
+
+function getFinanceiroSeries(db: LocalDb): FinanceiroDay[] {
+  const dom = getKpis(db).faturamentoHojeCents;
+  return MOCK_FINANCEIRO_SERIES.map((day) =>
+    day.label === "Dom" ? { ...day, faturamentoCents: dom } : day,
+  );
 }
 
 // ─── Menu ────────────────────────────────────────────────────────────────────
 
 export function fetchMenuCategories() {
-  return apiFetch<SharedMenuCategory[]>("/menu/categories");
+  return simulate<SharedMenuCategory[]>(MOCK_MENU_CATEGORIES);
 }
 
 export function fetchMenuItems(category?: string) {
-  const qs = category ? `?category=${encodeURIComponent(category)}` : "";
-  return apiFetch<SharedMenuItem[]>(`/menu/items${qs}`);
+  const db = readDb();
+  const data = category
+    ? db.menuItems.filter((item) => item.category === category)
+    : db.menuItems;
+  return simulate<SharedMenuItem[]>(data);
 }
 
 export interface UpsertMenuItemInput {
@@ -91,89 +161,207 @@ export interface UpsertMenuItemInput {
 }
 
 export function createMenuItem(input: UpsertMenuItemInput) {
-  return apiFetch<SharedMenuItem>("/menu/items", {
-    method: "POST",
-    body: JSON.stringify(input),
-  });
+  const db = readDb();
+  const baseId = input.id?.trim() || slugifyName(input.name);
+  const exists = new Set(db.menuItems.map((item) => item.id));
+  let id = baseId;
+  let suffix = 1;
+  while (exists.has(id)) {
+    id = `${baseId}-${suffix++}`;
+  }
+  const created: SharedMenuItem = {
+    id,
+    category: input.category,
+    name: input.name.trim(),
+    description: input.description.trim(),
+    priceCents: input.priceCents,
+    sommelierNote: input.sommelierNote?.trim() || undefined,
+    imageGradient: input.imageGradient || "from-zinc-900/40 to-zinc-950",
+    imageUrl: input.imageUrl,
+  };
+  writeDb({ ...db, menuItems: [created, ...db.menuItems] });
+  return simulate(created);
 }
 
 export function updateMenuItem(id: string, input: Partial<UpsertMenuItemInput>) {
-  return apiFetch<SharedMenuItem>(`/menu/items/${encodeURIComponent(id)}`, {
-    method: "PATCH",
-    body: JSON.stringify(input),
-  });
+  const db = readDb();
+  const idx = db.menuItems.findIndex((item) => item.id === id);
+  if (idx < 0) throw new Error("Produto não encontrado.");
+  const updated: SharedMenuItem = {
+    ...db.menuItems[idx],
+    ...input,
+    name: input.name?.trim() ?? db.menuItems[idx]!.name,
+    description: input.description?.trim() ?? db.menuItems[idx]!.description,
+    sommelierNote: input.sommelierNote?.trim() || undefined,
+  };
+  const menuItems = [...db.menuItems];
+  menuItems[idx] = updated;
+  writeDb({ ...db, menuItems });
+  return simulate(updated);
 }
 
 export function deleteMenuItem(id: string) {
-  return apiFetch<{ ok: true; deletedId: string }>(`/menu/items/${encodeURIComponent(id)}`, {
-    method: "DELETE",
-  });
+  const db = readDb();
+  const menuItems = db.menuItems.filter((item) => item.id !== id);
+  writeDb({ ...db, menuItems });
+  return simulate({ ok: true as const, deletedId: id });
 }
 
 export function uploadMenuItemPhoto(id: string, payload: { fileName: string; dataUrl: string }) {
-  return apiFetch<SharedMenuItem>(`/menu/items/${encodeURIComponent(id)}/photo`, {
-    method: "POST",
-    body: JSON.stringify(payload),
-  });
+  const db = readDb();
+  const idx = db.menuItems.findIndex((item) => item.id === id);
+  if (idx < 0) throw new Error("Produto não encontrado.");
+  const updated: SharedMenuItem = {
+    ...db.menuItems[idx],
+    imageUrl: payload.dataUrl,
+  };
+  const menuItems = [...db.menuItems];
+  menuItems[idx] = updated;
+  writeDb({ ...db, menuItems });
+  return simulate(updated);
 }
 
 // ─── Mesas ───────────────────────────────────────────────────────────────────
 
 export function fetchTables() {
-  return apiFetch<Table[]>("/tables");
+  const db = readDb();
+  return simulate<Table[]>(db.tables);
 }
 
 export function fetchTable(id: string) {
-  return apiFetch<Table>(`/tables/${encodeURIComponent(id)}`);
+  const db = readDb();
+  const table = db.tables.find((t) => t.id === id);
+  if (!table) throw new Error("Mesa não encontrada.");
+  return simulate<Table>(table);
 }
 
 export function fetchTableReservations() {
-  return apiFetch<TableReservation[]>("/tables/reservations");
+  const db = readDb();
+  const reservations = [...db.reservations].sort(
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+  );
+  return simulate<TableReservation[]>(reservations);
 }
 
 export function reserveTable(
   tableId: string,
   payload: { guestName: string; guests: number; reservedFor: string; notes?: string },
 ) {
-  return apiFetch<TableReservation>(`/tables/${encodeURIComponent(tableId)}/reserve`, {
-    method: "POST",
-    body: JSON.stringify(payload),
+  const db = readDb();
+  const tableIdx = db.tables.findIndex((table) => table.id === tableId);
+  if (tableIdx < 0) throw new Error("Mesa não encontrada.");
+  const table = db.tables[tableIdx]!;
+  if (table.status !== "livre" && table.status !== "reservada") {
+    throw new Error("Mesa indisponível para reserva.");
+  }
+  const reservation: TableReservation = {
+    id: nextReservationId(db.reservations),
+    tableId,
+    guestName: payload.guestName.trim(),
+    guests: payload.guests,
+    reservedFor: payload.reservedFor,
+    notes: payload.notes?.trim() || undefined,
+    createdAt: new Date().toISOString(),
+  };
+  const tables = [...db.tables];
+  tables[tableIdx] = {
+    ...table,
+    status: "reservada",
+    convidados: payload.guests,
+    tempoMinutos: null,
+  };
+  writeDb({
+    ...db,
+    tables,
+    reservations: [reservation, ...db.reservations],
   });
+  return simulate<TableReservation>(reservation);
 }
 
 // ─── Pedidos ─────────────────────────────────────────────────────────────────
 
 export function fetchOrdersByMesa(mesaId: string) {
-  return apiFetch<Order[]>(`/mesas/${encodeURIComponent(mesaId)}/orders`);
+  const db = readDb();
+  const orders = db.orders
+    .filter((order) => order.mesaId === mesaId)
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  return simulate<Order[]>(orders);
 }
 
 export function fetchOrder(orderId: string) {
-  return apiFetch<Order>(`/orders/${encodeURIComponent(orderId)}`);
+  const db = readDb();
+  const order = db.orders.find((item) => item.id === orderId);
+  if (!order) throw new Error("Pedido não encontrado.");
+  return simulate<Order>(order);
 }
 
 export function createOrder(mesaId: string, items: OrderItem[]) {
-  return apiFetch<Order>(`/mesas/${encodeURIComponent(mesaId)}/orders`, {
-    method: "POST",
-    body: JSON.stringify({ items }),
-  });
+  const db = readDb();
+  const now = new Date().toISOString();
+  const subtotalCents = items.reduce(
+    (sum, i) => sum + i.unitPriceCents * i.quantity,
+    0,
+  );
+  const created: Order = {
+    id: nextOrderId(db.orders),
+    mesaId,
+    items,
+    status: "pending",
+    subtotalCents,
+    createdAt: now,
+    updatedAt: now,
+  };
+  const tableIdx = db.tables.findIndex((table) => table.id === mesaId);
+  const tables = [...db.tables];
+  if (tableIdx >= 0) {
+    const table = tables[tableIdx]!;
+    if (table.status === "livre" || table.status === "reservada") {
+      tables[tableIdx] = { ...table, status: "em_atendimento", tempoMinutos: 0 };
+    }
+  }
+  writeDb({ ...db, tables, orders: [created, ...db.orders] });
+  return simulate<Order>(created);
 }
 
 /** Fecha a conta: todos os pedidos em aberto da mesa → pagos. */
 export function closeMesaBill(mesaId: string) {
-  return apiFetch<{
-    mesaId: string;
-    orders: Order[];
-    totalPaidCents: number;
-  }>(`/mesas/${encodeURIComponent(mesaId)}/pay`, {
-    method: "POST",
+  const db = readDb();
+  const now = new Date().toISOString();
+  const paidOrders: Order[] = [];
+  const orders = db.orders.map((order) => {
+    if (order.mesaId !== mesaId || order.status === "paid") return order;
+    const updated = { ...order, status: "paid" as const, updatedAt: now };
+    paidOrders.push(updated);
+    return updated;
   });
+  const totalPaidCents = paidOrders.reduce((sum, order) => sum + order.subtotalCents, 0);
+  writeDb({ ...db, orders });
+  return simulate({ mesaId, orders: paidOrders, totalPaidCents });
 }
 
 export function updateOrderStatus(orderId: string, status: OrderStatus) {
-  return apiFetch<Order>(`/orders/${encodeURIComponent(orderId)}/status`, {
-    method: "PATCH",
-    body: JSON.stringify({ status }),
-  });
+  const db = readDb();
+  const idx = db.orders.findIndex((order) => order.id === orderId);
+  if (idx < 0) throw new Error("Pedido não encontrado.");
+  const updated: Order = {
+    ...db.orders[idx]!,
+    status,
+    updatedAt: new Date().toISOString(),
+  };
+  const orders = [...db.orders];
+  orders[idx] = updated;
+  writeDb({ ...db, orders });
+  return simulate(updated);
+}
+
+function filterOrdersByStatus(all: Order[], status?: string) {
+  if (!status) return all;
+  const statuses = status.split(",").map((s) => s.trim()) as OrderStatus[];
+  return all.filter((order) => statuses.includes(order.status));
+}
+
+function sortTablesByName(tables: Table[]) {
+  return [...tables].sort((a, b) => a.nome.localeCompare(b.nome));
 }
 
 // ─── Admin ───────────────────────────────────────────────────────────────────
@@ -183,25 +371,39 @@ export function fetchAdminOverview(): Promise<{
   tables: Table[];
   financeiro: FinanceiroDay[];
 }> {
-  return apiFetch("/admin/overview");
+  const db = readDb();
+  return simulate({
+    kpis: getKpis(db),
+    tables: sortTablesByName(db.tables),
+    financeiro: getFinanceiroSeries(db),
+  });
 }
 
 export function fetchAdminKpis() {
-  return apiFetch<AdminKpis>("/admin/kpis");
+  const db = readDb();
+  return simulate<AdminKpis>(getKpis(db));
 }
 
 export function fetchAdminTables() {
-  return apiFetch<Table[]>("/admin/tables");
+  const db = readDb();
+  return simulate<Table[]>(sortTablesByName(db.tables));
 }
 
 export function fetchAdminFinanceiro(): Promise<{
   kpis: AdminKpis;
   series: FinanceiroDay[];
 }> {
-  return apiFetch("/admin/financeiro");
+  const db = readDb();
+  return simulate({
+    kpis: getKpis(db),
+    series: getFinanceiroSeries(db),
+  });
 }
 
 export function fetchAdminOrders(status?: string) {
-  const qs = status ? `?status=${encodeURIComponent(status)}` : "";
-  return apiFetch<Order[]>(`/admin/orders${qs}`);
+  const db = readDb();
+  const filtered = filterOrdersByStatus(db.orders, status).sort(
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+  );
+  return simulate<Order[]>(filtered);
 }

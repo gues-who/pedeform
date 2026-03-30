@@ -39,7 +39,6 @@ function fmtDateTime(iso: string) {
 export function PedidosView() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isLive, setIsLive] = useState(true);
   const [statusFilter, setStatusFilter] = useState<"all" | OrderStatus>("all");
   const [mesaFilter, setMesaFilter] = useState("all");
 
@@ -47,10 +46,8 @@ export function PedidosView() {
     try {
       const data = await fetchAdminOrders();
       setOrders(data);
-      setIsLive(true);
     } catch {
       setOrders(mockAdminOrders);
-      setIsLive(false);
     } finally {
       setLoading(false);
     }
@@ -112,9 +109,7 @@ export function PedidosView() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Badge tone={isLive ? "success" : "warning"}>
-            {isLive ? "API ao vivo" : "Mock admin"}
-          </Badge>
+          <Badge tone="success">Mock ativo</Badge>
           <Badge tone={filteredOrders.length > 0 ? "neutral" : "warning"}>
             {filteredOrders.length} pedido{filteredOrders.length !== 1 ? "s" : ""}
           </Badge>

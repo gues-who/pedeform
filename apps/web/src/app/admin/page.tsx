@@ -13,12 +13,11 @@ import { SkeletonCard } from "@/components/ui/skeleton";
 
 export default function AdminHomePage() {
   const [kpis, setKpis] = useState<AdminKpis | null>(null);
-  const [isLive, setIsLive] = useState(false);
 
   useEffect(() => {
     fetchAdminKpis()
-      .then((data) => { setKpis(data); setIsLive(true); })
-      .catch(() => { setKpis(mockKpis); setIsLive(false); });
+      .then((data) => { setKpis(data); })
+      .catch(() => { setKpis(mockKpis); });
   }, []);
 
   if (!kpis) {
@@ -43,9 +42,7 @@ export default function AdminHomePage() {
             Resumo operacional e financeiro.
           </p>
         </div>
-        <Badge tone={isLive ? "success" : "warning"}>
-          {isLive ? "API ao vivo" : "Mock"}
-        </Badge>
+        <Badge tone="success">Mock ativo</Badge>
       </header>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

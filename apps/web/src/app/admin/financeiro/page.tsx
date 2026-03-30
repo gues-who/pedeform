@@ -1,36 +1,47 @@
-import type { Metadata } from "next";
-import type { AdminKpis, FinanceiroDay } from "@pedeform/shared";
-import { mockFinanceiroSeries, mockKpis } from "@/data/mock-admin";
+"use client";
+
+import { useEffect, useState } from "react";
 import { formatBRL } from "@/data/mock-menu";
+import { fetchAdminFinanceiro } from "@/lib/api-client";
 import { Card, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { SkeletonCard } from "@/components/ui/skeleton";
 
-export const metadata: Metadata = {
-  title: "Financeiro",
-};
+export default function AdminFinanceiroPage() {
+  const [loading, setLoading] = useState(true);
+  const [kpis, setKpis] = useState({
+    mesasOcupadas: 0,
+    mesasTotal: 0,
+    pedidosAtivos: 0,
+    ticketMedioCents: 0,
+    faturamentoHojeCents: 0,
+    permanenciaMediaMin: 0,
+  });
+  const [series, setSeries] = useState<{ label: string; faturamentoCents: number }[]>([]);
 
-async function loadFinanceiro(): Promise<{
-  kpis: AdminKpis;
-  series: FinanceiroDay[];
-  isLive: boolean;
-}> {
-  try {
-    const base = process.env.API_BASE_URL ?? "http://localhost:3001/v1";
-    const res = await fetch(`${base}/admin/financeiro`, {
-      cache: "no-store",
-      signal: AbortSignal.timeout(3000),
-    });
-    if (!res.ok) throw new Error("API indisponível");
-    const data = await res.json() as { kpis: AdminKpis; series: FinanceiroDay[] };
-    return { ...data, isLive: true };
-  } catch {
-    return { kpis: mockKpis, series: mockFinanceiroSeries, isLive: false };
+  useEffect(() => {
+    fetchAdminFinanceiro()
+      .then((data) => {
+        setKpis(data.kpis);
+        setSeries(data.series);
+      })
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="mx-auto max-w-4xl space-y-4">
+        <div className="h-8 w-48 animate-pulse rounded-lg bg-zinc-200 dark:bg-zinc-800" />
+        <div className="grid gap-4 sm:grid-cols-3">
+          {[1, 2, 3].map((i) => (
+            <SkeletonCard key={i} lines={2} />
+          ))}
+        </div>
+      </div>
+    );
   }
-}
 
-export default async function AdminFinanceiroPage() {
-  const { kpis, series, isLive } = await loadFinanceiro();
-  const max = Math.max(...series.map((d) => d.faturamentoCents));
+  const max = Math.max(1, ...series.map((d) => d.faturamentoCents));
 
   return (
     <div className="mx-auto max-w-4xl space-y-8">
@@ -43,9 +54,7 @@ export default async function AdminFinanceiroPage() {
             Faturamento e ticket — fonte de verdade futura em PostgreSQL.
           </p>
         </div>
-        <Badge tone={isLive ? "success" : "warning"}>
-          {isLive ? "API ao vivo" : "Mock"}
-        </Badge>
+        <Badge tone="success">Mock ativo</Badge>
       </header>
 
       <div className="grid gap-4 sm:grid-cols-3">
