@@ -9,6 +9,7 @@ import { useToast } from "@/contexts/toast-context";
 import { formatBRL } from "@/data/mock-menu";
 import Link from "next/link";
 import { closeMesaBill } from "@/lib/api-client";
+import { closeLocalMesaBill } from "@/lib/local-orders";
 import { isOrderOpen } from "@/lib/order-utils";
 import { mesaPedido } from "@/lib/routes";
 import { Button } from "@/components/ui/button";
@@ -82,7 +83,19 @@ export function ContaView({ mesaId }: { mesaId: string }) {
     } catch (e) {
       const msg =
         e instanceof Error ? e.message : "Não foi possível registrar o pagamento.";
-      toast(msg, "error");
+      const offline =
+        msg.includes("Não foi possível conectar à API") ||
+        msg.includes("Failed to fetch");
+      if (offline) {
+        const res = closeLocalMesaBill(mesaId);
+        await refreshOrders();
+        toast(
+          `Conta paga (modo demo offline) — ${formatBRL(res.totalPaidCents)}`,
+          "success",
+        );
+      } else {
+        toast(msg, "error");
+      }
     } finally {
       setPaying(false);
     }

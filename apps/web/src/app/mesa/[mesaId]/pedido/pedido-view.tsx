@@ -29,7 +29,7 @@ export function PedidoView({ mesaId }: { mesaId: string }) {
     if (lines.length === 0) return;
     try {
       await submitOrder(lines);
-      toast("Pedido enviado à cozinha!", "success");
+      toast("Pedido enviado! Ele já aparece em Conta e Acompanhar.", "success");
       clear();
       router.push(mesaAcompanhar(mesaId));
     } catch {

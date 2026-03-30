@@ -35,6 +35,7 @@ export function MesaBottomNav({ mesaId }: { mesaId: string }) {
             <li key={path} className="flex-1">
               <Link
                 href={path}
+                aria-current={active ? "page" : undefined}
                 className={`relative flex flex-col items-center rounded-xl py-2 text-xs font-medium transition-colors ${
                   active
                     ? "text-zinc-900 dark:text-zinc-50"
@@ -56,6 +57,9 @@ export function MesaBottomNav({ mesaId }: { mesaId: string }) {
                     </span>
                   )}
                 </span>
+                {active && (
+                  <span className="relative z-10 mt-1 h-1 w-6 rounded-full bg-zinc-900 dark:bg-zinc-100" />
+                )}
               </Link>
             </li>
           );

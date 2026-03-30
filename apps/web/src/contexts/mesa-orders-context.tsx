@@ -11,6 +11,11 @@ import {
 } from "react";
 import type { Order } from "@pedeform/shared";
 import { fetchOrdersByMesa } from "@/lib/api-client";
+import {
+  createLocalOrder,
+  getLocalOrders,
+  updateLocalOrderStatus,
+} from "@/lib/local-orders";
 import { pickOrderForTracking } from "@/lib/order-utils";
 import { connectSocket } from "@/lib/socket-client";
 
@@ -33,6 +38,7 @@ type MesaOrdersContextValue = {
   ordersLoading: boolean;
   ordersError: string | null;
   refreshOrders: () => Promise<void>;
+  upsertOrderLocal: (order: Order) => void;
   submitState: SubmitState;
   submitError: string | null;
   setSubmitState: (s: SubmitState) => void;
@@ -54,16 +60,20 @@ export function MesaOrdersProvider({
   const [submitState, setSubmitState] = useState<SubmitState>("idle");
   const [submitError, setSubmitError] = useState<string | null>(null);
 
+  const upsertOrderLocal = useCallback((order: Order) => {
+    setAllOrders((prev) => upsertOrder(prev, order));
+  }, []);
+
   const refreshOrders = useCallback(async () => {
     try {
       const list = await fetchOrdersByMesa(mesaId);
       setAllOrders(list);
       setOrdersError(null);
-    } catch (e) {
-      const msg =
-        e instanceof Error ? e.message : "Não foi possível carregar pedidos.";
-      setOrdersError(msg);
-      setAllOrders([]);
+    } catch {
+      const local = getLocalOrders(mesaId);
+      setAllOrders(local);
+      // Em modo demo/offline, não bloquear a UI com erro.
+      setOrdersError(null);
     } finally {
       setOrdersLoading(false);
     }
@@ -111,6 +121,7 @@ export function MesaOrdersProvider({
       ordersLoading,
       ordersError,
       refreshOrders,
+      upsertOrderLocal,
       submitState,
       submitError,
       setSubmitState,
@@ -123,6 +134,7 @@ export function MesaOrdersProvider({
       ordersLoading,
       ordersError,
       refreshOrders,
+      upsertOrderLocal,
       submitState,
       submitError,
     ],
@@ -146,7 +158,8 @@ export function useMesaOrders() {
 }
 
 export function useOrderSubmit(mesaId: string) {
-  const { refreshOrders, setSubmitState, setSubmitError } = useMesaOrders();
+  const { refreshOrders, setSubmitState, setSubmitError, upsertOrderLocal } =
+    useMesaOrders();
 
   return useCallback(
     async (
@@ -161,17 +174,47 @@ export function useOrderSubmit(mesaId: string) {
       setSubmitError(null);
       try {
         const { createOrder } = await import("@/lib/api-client");
-        await createOrder(mesaId, items);
+        const created = await createOrder(mesaId, items);
+        upsertOrderLocal(created);
         await refreshOrders();
         setSubmitState("success");
+        return created;
       } catch (err) {
         const msg =
           err instanceof Error ? err.message : "Erro ao enviar pedido";
+        const offline =
+          msg.includes("Não foi possível conectar à API") ||
+          msg.includes("Failed to fetch");
+        if (offline) {
+          const local = createLocalOrder(mesaId, items);
+          upsertOrderLocal(local);
+          // Simula progresso de cozinha no modo offline.
+          const timeline = [
+            { status: "preparing" as const, delay: 6000 },
+            { status: "almost_ready" as const, delay: 14000 },
+            { status: "served" as const, delay: 24000 },
+          ];
+          for (const t of timeline) {
+            window.setTimeout(() => {
+              const updated = updateLocalOrderStatus(mesaId, local.id, t.status);
+              if (updated) upsertOrderLocal(updated);
+            }, t.delay);
+          }
+          setSubmitState("success");
+          setSubmitError(null);
+          return local;
+        }
         setSubmitError(msg);
         setSubmitState("error");
         throw err;
       }
     },
-    [mesaId, refreshOrders, setSubmitState, setSubmitError],
+    [
+      mesaId,
+      refreshOrders,
+      setSubmitState,
+      setSubmitError,
+      upsertOrderLocal,
+    ],
   );
 }
