@@ -37,9 +37,8 @@ jobs:
         run: npm run build -w @pedeform/web
         env:
           GITHUB_ACTIONS: "true"
-          # API e WS apontam para localhost — falharão graciosamente,
-          # o frontend usa dados mock como fallback.
-          NEXT_PUBLIC_API_URL: "http://localhost:3001/v1"
+          # Sem NEXT_PUBLIC_API_URL: build não embute localhost; no Pages o host
+          # não é localhost, então a API não é chamada (mock / erro amigável).
           NEXT_PUBLIC_WS_URL: "http://localhost:3001"
 
       - name: Add .nojekyll (evita que GitHub Pages ignore arquivos _next)
