@@ -16,6 +16,15 @@ import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { Skeleton } from "@/components/ui/skeleton";
 
+function withDetectedBasePath(path: string) {
+  if (!path.startsWith("/")) return path;
+  if (typeof window === "undefined") return path;
+  if (window.location.pathname.startsWith("/pedeform/")) {
+    return `/pedeform${path}`;
+  }
+  return path;
+}
+
 export function MenuView() {
   const reduceMotion = useReducedMotion();
   const [categories, setCategories] =
@@ -115,8 +124,11 @@ export function MenuView() {
       </div>
 
       <ul className="space-y-4">
-        {items.map((item, index) => (
-          <motion.li
+        {items.map((item, index) => {
+          const resolvedImage = resolveMenuItemImageUrl(item);
+          const imageSrc = resolvedImage ? withDetectedBasePath(resolvedImage) : undefined;
+          return (
+            <motion.li
             key={item.id}
             initial={reduceMotion ? false : { opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
@@ -124,11 +136,12 @@ export function MenuView() {
             className="overflow-hidden rounded-2xl border border-zinc-200/90 bg-white dark:border-zinc-800 dark:bg-zinc-950"
           >
             <div className="relative aspect-[21/9] w-full overflow-hidden">
-              {resolveMenuItemImageUrl(item) && !failedImages[item.id] ? (
+              {imageSrc && !failedImages[item.id] ? (
                 <Image
-                  src={resolveMenuItemImageUrl(item)!}
+                  src={imageSrc}
                   alt={item.name}
                   fill
+                  unoptimized
                   sizes="(max-width: 768px) 100vw, 640px"
                   className="object-cover"
                   onError={() =>
@@ -184,7 +197,8 @@ export function MenuView() {
               </Button>
             </div>
           </motion.li>
-        ))}
+          );
+        })}
       </ul>
 
       <p className="pb-4 text-center text-xs text-zinc-500">
