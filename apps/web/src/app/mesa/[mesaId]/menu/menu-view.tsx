@@ -8,6 +8,7 @@ import {
   MENU_CATEGORIES as FALLBACK_CATEGORIES,
   MENU_ITEMS as FALLBACK_ITEMS,
   formatBRL,
+  resolveMenuItemImageUrl,
 } from "@/data/mock-menu";
 import { useMesaCart } from "@/contexts/mesa-cart-context";
 import { fetchMenuCategories, fetchMenuItems } from "@/lib/api-client";
@@ -123,9 +124,9 @@ export function MenuView() {
             className="overflow-hidden rounded-2xl border border-zinc-200/90 bg-white dark:border-zinc-800 dark:bg-zinc-950"
           >
             <div className="relative aspect-[21/9] w-full overflow-hidden">
-              {item.imageUrl && !failedImages[item.id] ? (
+              {resolveMenuItemImageUrl(item) && !failedImages[item.id] ? (
                 <Image
-                  src={item.imageUrl}
+                  src={resolveMenuItemImageUrl(item)!}
                   alt={item.name}
                   fill
                   sizes="(max-width: 768px) 100vw, 640px"
