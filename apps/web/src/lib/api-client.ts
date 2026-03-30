@@ -1,11 +1,13 @@
 import type {
   AdminKpis,
   FinanceiroDay,
+  MenuCategoryId,
   Order,
   OrderItem,
   OrderStatus,
   SharedMenuCategory,
   SharedMenuItem,
+  TableReservation,
   Table,
 } from "@pedeform/shared";
 
@@ -82,6 +84,44 @@ export function fetchMenuItems(category?: string) {
   return apiFetch<SharedMenuItem[]>(`/menu/items${qs}`);
 }
 
+export interface UpsertMenuItemInput {
+  id?: string;
+  category: MenuCategoryId;
+  name: string;
+  description: string;
+  priceCents: number;
+  sommelierNote?: string;
+  imageGradient?: string;
+  imageUrl?: string;
+}
+
+export function createMenuItem(input: UpsertMenuItemInput) {
+  return apiFetch<SharedMenuItem>("/menu/items", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+export function updateMenuItem(id: string, input: Partial<UpsertMenuItemInput>) {
+  return apiFetch<SharedMenuItem>(`/menu/items/${encodeURIComponent(id)}`, {
+    method: "PATCH",
+    body: JSON.stringify(input),
+  });
+}
+
+export function deleteMenuItem(id: string) {
+  return apiFetch<{ ok: true; deletedId: string }>(`/menu/items/${encodeURIComponent(id)}`, {
+    method: "DELETE",
+  });
+}
+
+export function uploadMenuItemPhoto(id: string, payload: { fileName: string; dataUrl: string }) {
+  return apiFetch<SharedMenuItem>(`/menu/items/${encodeURIComponent(id)}/photo`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
 // ─── Mesas ───────────────────────────────────────────────────────────────────
 
 export function fetchTables() {
@@ -90,6 +130,20 @@ export function fetchTables() {
 
 export function fetchTable(id: string) {
   return apiFetch<Table>(`/tables/${encodeURIComponent(id)}`);
+}
+
+export function fetchTableReservations() {
+  return apiFetch<TableReservation[]>("/tables/reservations");
+}
+
+export function reserveTable(
+  tableId: string,
+  payload: { guestName: string; guests: number; reservedFor: string; notes?: string },
+) {
+  return apiFetch<TableReservation>(`/tables/${encodeURIComponent(tableId)}/reserve`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
 }
 
 // ─── Pedidos ─────────────────────────────────────────────────────────────────

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { admin, mesaRoot } from "@/lib/routes";
+import { admin, mesaRoot, reservas } from "@/lib/routes";
 
 const DEMO_MESAS = ["1", "2", "demo", "vip"];
 
@@ -31,6 +31,12 @@ export default function Home() {
             className="inline-flex items-center justify-center rounded-full border border-zinc-300 bg-white px-7 py-3 text-sm font-medium text-zinc-900 transition-colors hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100 dark:hover:bg-zinc-900"
           >
             Painel admin
+          </Link>
+          <Link
+            href={reservas.root}
+            className="inline-flex items-center justify-center rounded-full border border-zinc-300 bg-white px-7 py-3 text-sm font-medium text-zinc-900 transition-colors hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100 dark:hover:bg-zinc-900"
+          >
+            Reservar mesa
           </Link>
         </div>
       </main>

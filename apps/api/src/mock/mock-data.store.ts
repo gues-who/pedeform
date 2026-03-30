@@ -1,5 +1,11 @@
 import { Injectable } from '@nestjs/common';
-import type { Order, OrderItem, OrderStatus } from '@pedeform/shared';
+import type {
+  Order,
+  OrderItem,
+  OrderStatus,
+  SharedMenuItem,
+  TableReservation,
+} from '@pedeform/shared';
 import {
   MOCK_MENU_CATEGORIES,
   MOCK_MENU_ITEMS,
@@ -9,17 +15,23 @@ import {
 } from '@pedeform/shared';
 
 let _orderId = MOCK_NEXT_ORDER_SEQUENCE;
+let _reservationId = 1;
 
 function nextOrderId() {
   return `order_${String(_orderId++).padStart(4, '0')}`;
 }
 
+function nextReservationId() {
+  return `reservation_${String(_reservationId++).padStart(4, '0')}`;
+}
+
 @Injectable()
 export class MockDataStore {
   readonly menuCategories = MOCK_MENU_CATEGORIES;
-  readonly menuItems = MOCK_MENU_ITEMS;
+  menuItems: SharedMenuItem[] = structuredClone(MOCK_MENU_ITEMS);
 
   tables = structuredClone(MOCK_TABLES);
+  reservations: TableReservation[] = [];
 
   orders: Order[] = structuredClone(MOCK_SEED_ORDERS);
 
@@ -107,7 +119,9 @@ export class MockDataStore {
       .filter((m) => m > 0);
     const permanenciaMedia =
       permanencias.length > 0
-        ? Math.round(permanencias.reduce((a, b) => a + b, 0) / permanencias.length)
+        ? Math.round(
+            permanencias.reduce((a, b) => a + b, 0) / permanencias.length,
+          )
         : 58;
 
     return {
@@ -131,5 +145,45 @@ export class MockDataStore {
       { label: 'Sáb', faturamentoCents: 612000 },
       { label: 'Dom', faturamentoCents: dom },
     ];
+  }
+
+  addMenuItem(item: SharedMenuItem) {
+    this.menuItems.unshift(item);
+    return item;
+  }
+
+  updateMenuItem(id: string, patch: Partial<Omit<SharedMenuItem, 'id'>>) {
+    const idx = this.menuItems.findIndex((item) => item.id === id);
+    if (idx < 0) return null;
+    const next = { ...this.menuItems[idx], ...patch };
+    this.menuItems[idx] = next;
+    return next;
+  }
+
+  deleteMenuItem(id: string) {
+    const idx = this.menuItems.findIndex((item) => item.id === id);
+    if (idx < 0) return null;
+    const [removed] = this.menuItems.splice(idx, 1);
+    return removed;
+  }
+
+  createReservation(input: {
+    tableId: string;
+    guestName: string;
+    guests: number;
+    reservedFor: string;
+    notes?: string;
+  }) {
+    const reservation: TableReservation = {
+      id: nextReservationId(),
+      tableId: input.tableId,
+      guestName: input.guestName,
+      guests: input.guests,
+      reservedFor: input.reservedFor,
+      notes: input.notes,
+      createdAt: new Date().toISOString(),
+    };
+    this.reservations.unshift(reservation);
+    return reservation;
   }
 }

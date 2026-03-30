@@ -4,13 +4,14 @@ import type { ReactNode } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
-import { admin, mesaRoot } from "@/lib/routes";
+import { admin, clienteRoot } from "@/lib/routes";
 
 const nav = [
   { href: admin.root, label: "Visão geral", exact: true },
   { href: admin.operacao, label: "Operação", exact: false },
   { href: admin.kds, label: "KDS — Cozinha", exact: false },
   { href: admin.financeiro, label: "Financeiro", exact: false },
+  { href: admin.produtos, label: "Produtos", exact: false },
 ] as const;
 
 export function AdminShell({ children }: { children: ReactNode }) {
@@ -27,10 +28,10 @@ export function AdminShell({ children }: { children: ReactNode }) {
             <p className="text-sm font-semibold">Painel Admin</p>
           </div>
           <Link
-            href={mesaRoot("demo")}
+            href={clienteRoot()}
             className="rounded-lg border border-zinc-800 px-3 py-1.5 text-xs text-zinc-400 transition-colors hover:border-zinc-600 hover:text-zinc-200 md:mt-3"
           >
-            Ver mesa demo →
+            Switch mode: Cliente
           </Link>
         </div>
 

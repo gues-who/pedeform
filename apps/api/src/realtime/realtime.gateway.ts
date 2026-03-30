@@ -59,10 +59,7 @@ export class RealtimeGateway
   }
 
   @SubscribeMessage('ping')
-  handlePing(
-    @MessageBody() data: unknown,
-    @ConnectedSocket() client: Socket,
-  ) {
+  handlePing(@MessageBody() data: unknown, @ConnectedSocket() client: Socket) {
     return {
       event: 'pong',
       data: { at: Date.now(), echo: data, clientId: client.id },

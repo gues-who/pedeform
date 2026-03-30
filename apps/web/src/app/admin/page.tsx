@@ -107,6 +107,12 @@ export default function AdminHomePage() {
           <p className="mt-3 text-2xl font-semibold tabular-nums text-zinc-900 dark:text-zinc-50">
             {formatBRL(kpis.ticketMedioCents)}
           </p>
+          <Link
+            href={admin.produtos}
+            className="mt-3 inline-block text-sm font-medium text-zinc-900 underline-offset-2 hover:underline dark:text-zinc-100"
+          >
+            Gerenciar produtos →
+          </Link>
         </Card>
       </div>
     </div>

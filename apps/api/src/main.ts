@@ -1,5 +1,6 @@
 import { NestFactory } from '@nestjs/core';
 import { Logger } from '@nestjs/common';
+import express from 'express';
 import { parseCorsOrigins } from './config/cors-origins';
 import { AppModule } from './app.module';
 
@@ -12,6 +13,8 @@ async function bootstrap() {
     origin: parseCorsOrigins(),
     credentials: true,
   });
+  app.use(express.json({ limit: '12mb' }));
+  app.use(express.urlencoded({ limit: '12mb', extended: true }));
 
   const port = Number(process.env.PORT ?? 3001);
   await app.listen(port);
@@ -20,4 +23,4 @@ async function bootstrap() {
   logger.log(`API rodando em http://localhost:${port}/v1`);
   logger.log(`WebSocket em ws://localhost:${port}/realtime`);
 }
-bootstrap();
+void bootstrap();

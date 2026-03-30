@@ -38,9 +38,9 @@ export function MesaHeader({
         </div>
         <Link
           href={admin.root}
-          className="text-xs text-zinc-500 underline-offset-4 hover:text-zinc-800 hover:underline dark:hover:text-zinc-300"
+          className="rounded-full border border-zinc-300 px-3 py-1 text-xs text-zinc-600 transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-900"
         >
-          Admin
+          Switch mode: Admin
         </Link>
       </div>
     </header>

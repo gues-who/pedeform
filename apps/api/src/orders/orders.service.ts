@@ -30,7 +30,9 @@ export class OrdersService {
     }
     for (const it of items) {
       if (!it.menuItemId?.trim() || !it.name?.trim()) {
-        throw new BadRequestException('Cada item precisa de menuItemId e name.');
+        throw new BadRequestException(
+          'Cada item precisa de menuItemId e name.',
+        );
       }
       if (it.quantity < 1 || !Number.isFinite(it.quantity)) {
         throw new BadRequestException('Quantidade inválida.');

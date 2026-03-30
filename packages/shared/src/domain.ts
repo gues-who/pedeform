@@ -49,6 +49,7 @@ export interface Order {
 
 export type TableStatus =
   | "livre"
+  | "reservada"
   | "em_atendimento"
   | "conta"
   | "alerta";
@@ -59,6 +60,16 @@ export interface Table {
   convidados: number;
   status: TableStatus;
   tempoMinutos: number | null;
+}
+
+export interface TableReservation {
+  id: string;
+  tableId: string;
+  guestName: string;
+  guests: number;
+  reservedFor: string;
+  notes?: string;
+  createdAt: string;
 }
 
 export interface AdminKpis {

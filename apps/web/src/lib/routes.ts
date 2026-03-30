@@ -20,9 +20,18 @@ export function mesaAcompanhar(mesaId: string) {
   return `${mesaRoot(mesaId)}/acompanhar`;
 }
 
+export function clienteRoot() {
+  return mesaRoot("demo");
+}
+
+export const reservas = {
+  root: "/reserva",
+} as const;
+
 export const admin = {
   root: "/admin",
   operacao: "/admin/operacao",
   kds: "/admin/kds",
   financeiro: "/admin/financeiro",
+  produtos: "/admin/produtos",
 } as const;

@@ -13,6 +13,7 @@ import { mockMesas } from "@/data/mock-admin";
 function statusTone(s: TableStatus): "neutral" | "success" | "warning" | "danger" {
   switch (s) {
     case "livre": return "neutral";
+    case "reservada": return "warning";
     case "em_atendimento": return "success";
     case "conta": return "warning";
     case "alerta": return "danger";
@@ -22,6 +23,7 @@ function statusTone(s: TableStatus): "neutral" | "success" | "warning" | "danger
 function statusLabel(s: TableStatus) {
   switch (s) {
     case "livre": return "Livre";
+    case "reservada": return "Reservada";
     case "em_atendimento": return "Em atendimento";
     case "conta": return "Conta";
     case "alerta": return "Alerta";

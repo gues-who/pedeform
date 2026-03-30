@@ -1,11 +1,4 @@
-import {
-  Body,
-  Controller,
-  Get,
-  Param,
-  Patch,
-  Post,
-} from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post } from '@nestjs/common';
 import type { OrderItem, OrderStatus } from '@pedeform/shared';
 import { OrdersService } from './orders.service';
 
@@ -27,10 +20,7 @@ export class OrdersController {
   }
 
   @Post('mesas/:mesaId/orders')
-  createOrder(
-    @Param('mesaId') mesaId: string,
-    @Body() dto: CreateOrderDto,
-  ) {
+  createOrder(@Param('mesaId') mesaId: string, @Body() dto: CreateOrderDto) {
     return this.ordersService.createOrder(mesaId, dto.items);
   }
 
