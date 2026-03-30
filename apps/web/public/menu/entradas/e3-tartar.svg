@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 520" role="img" aria-labelledby="title desc">
+  <title id="title">Tartar de atum</title>
+  <desc id="desc">Ilustracao abstrata de tartar com tons rosados.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#9f1239" />
+      <stop offset="100%" stop-color="#111827" />
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="520" fill="url(#bg)" />
+  <rect x="210" y="130" width="360" height="220" rx="46" fill="#fda4af" fill-opacity="0.3" />
+  <rect x="280" y="175" width="220" height="130" rx="30" fill="#ffe4e6" fill-opacity="0.3" />
+  <circle cx="760" cy="230" r="120" fill="#fecdd3" fill-opacity="0.18" />
+  <text x="70" y="430" fill="#fff" font-family="Inter, Arial, sans-serif" font-size="52" font-weight="700">
+    Tartar de atum
+  </text>
+</svg>

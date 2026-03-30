@@ -29,7 +29,7 @@ export const MOCK_MENU_ITEMS: SharedMenuItem[] = [
     description: "Azeite de trufa negra, rúcula e lascas de parmesão.",
     priceCents: 8900,
     sommelierNote: "Pinot Noir leve — notas terrosas equilibram a gordura.",
-    imageUrl: "/menu/entradas/e1-carpaccio.png",
+    imageUrl: "/menu/entradas/e1-carpaccio.svg",
     imageGradient: "from-amber-900/40 to-stone-900",
   },
   {
@@ -39,7 +39,7 @@ export const MOCK_MENU_ITEMS: SharedMenuItem[] = [
     description: "Manteiga cítrica e ervas finas.",
     priceCents: 6200,
     sommelierNote: "Champagne brut — acidez limpa com o mar.",
-    imageUrl: "/menu/entradas/e2-ostra.png",
+    imageUrl: "/menu/entradas/e2-ostra.svg",
     imageGradient: "from-teal-900/50 to-zinc-900",
   },
   {
@@ -49,7 +49,7 @@ export const MOCK_MENU_ITEMS: SharedMenuItem[] = [
     description: "Abacate, gergelim torrado e gengibre marinado.",
     priceCents: 7400,
     sommelierNote: "Sake ginjo — umami e frescor em sintonia.",
-    imageUrl: "/menu/entradas/e3-tartar.png",
+    imageUrl: "/menu/entradas/e3-tartar.svg",
     imageGradient: "from-rose-900/40 to-zinc-900",
   },
   {
@@ -59,7 +59,7 @@ export const MOCK_MENU_ITEMS: SharedMenuItem[] = [
     description: "Manjericão fresco, pesto de pistache e azeite extra virgem.",
     priceCents: 6800,
     sommelierNote: "Verdicchio — acidez e cremosidade.",
-    imageUrl: "/menu/entradas/e4-burrata.png",
+    imageUrl: "/menu/entradas/e4-burrata.svg",
     imageGradient: "from-orange-950/40 to-stone-900",
   },
   // Principais

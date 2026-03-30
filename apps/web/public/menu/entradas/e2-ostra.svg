@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 520" role="img" aria-labelledby="title desc">
+  <title id="title">Ostra gratinada</title>
+  <desc id="desc">Ilustracao abstrata de ostra gratinada com tons marinhos.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f766e" />
+      <stop offset="100%" stop-color="#111827" />
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="520" fill="url(#bg)" />
+  <ellipse cx="390" cy="250" rx="220" ry="120" fill="#a7f3d0" fill-opacity="0.25" />
+  <ellipse cx="430" cy="250" rx="150" ry="85" fill="#ecfeff" fill-opacity="0.38" />
+  <ellipse cx="760" cy="260" rx="180" ry="95" fill="#99f6e4" fill-opacity="0.2" />
+  <text x="70" y="430" fill="#fff" font-family="Inter, Arial, sans-serif" font-size="52" font-weight="700">
+    Ostra gratinada
+  </text>
+</svg>
