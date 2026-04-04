@@ -1,0 +1,69 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function userDocPath() {
+      return /databases/$(database)/documents/users/$(request.auth.uid);
+    }
+
+    function userRole() {
+      return get(userDocPath()).data.role;
+    }
+
+    function isAdmin() {
+      return signedIn() && exists(userDocPath()) && userRole() == 'admin';
+    }
+
+    // Perfil: leitura/escrita apenas do próprio documento (role vem do Firestore no login).
+    match /users/{userId} {
+      allow read: if signedIn() && request.auth.uid == userId;
+      allow create: if signedIn()
+        && request.auth.uid == userId
+        && request.resource.data.keys().hasAll(['name', 'email', 'role', 'createdAt'])
+        && request.resource.data.role == 'client'
+        && request.resource.data.name is string
+        && request.resource.data.email is string;
+      allow update: if signedIn() && request.auth.uid == userId;
+      allow delete: if false;
+    }
+
+    // Cardápio: leitura pública (mesa/QR); escrita só admin (painel + seed em /admin/config).
+    match /categorias/{docId} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /cardapio/{docId} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin();
+    }
+
+    // Mesas: o app atual atualiza status sem Firebase Auth no fluxo do cliente (QR).
+    // Para endurecer: sessão de mesa assinada pelo backend (Nest) ou Anonymous Auth + claims.
+    match /mesas/{mesaId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    match /reservas/{reservaId} {
+      allow read: if true;
+      allow create: if true;
+      allow update, delete: if isAdmin();
+    }
+
+    // Pedidos: criação a partir da mesa (geralmente sem login); cozinha/admin atualizam status.
+    match /pedidos/{pedidoId} {
+      allow read: if true;
+      allow create: if request.resource.data.mesaId is string
+        && request.resource.data.items is list
+        && request.resource.data.status == 'pending'
+        && request.resource.data.subtotalCents is int;
+      allow update: if true;
+      allow delete: if false;
+    }
+  }
+}
