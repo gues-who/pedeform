@@ -1,176 +1,136 @@
 "use client";
 
-import Link from "next/link";
-import { admin, mesaRoot, reservas } from "@/lib/routes";
-import { useAuth } from "@/contexts/auth-context";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/contexts/auth-context";
+import { useToast } from "@/contexts/toast-context";
+import { Spinner } from "@/components/ui/spinner";
+import { auth, db } from "@/lib/firebase";
+import { doc, getDoc } from "firebase/firestore";
 
-const DEMO_MESAS = ["1", "2", "demo", "vip"];
+export default function RootLoginPage() {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const { login, user, loading: authLoading } = useAuth();
+  const toast = useToast();
+  const router = useRouter();
 
-export default function Home() {
-  const { user, logout } = useAuth();
+  // Se já estiver logado, redireciona para a home/welcome
+  useEffect(() => {
+    if (!authLoading && user) {
+      if (user.role === "admin") router.push("/admin");
+      else if (user.role === "kitchen") router.push("/cozinha");
+      else router.push("/welcome");
+    }
+  }, [user, authLoading, router]);
+
+  async function handleLogin(e: React.FormEvent) {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      await login(email, password);
+      toast("Bem-vindo de volta!", "success");
+      // O useEffect acima cuidará do redirecionamento
+    } catch (err: any) {
+      toast("Credenciais inválidas ou erro: " + err.message, "error");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-zinc-950">
+        <Spinner size="lg" />
+      </div>
+    );
+  }
 
   return (
-    <div className="flex min-h-screen flex-col bg-zinc-50 dark:bg-black">
-      {/* Navbar Minimalista */}
-      <nav className="flex items-center justify-between px-6 py-4 border-b border-zinc-200 dark:border-zinc-800">
-        <div className="text-xl font-bold tracking-tighter">Pedeform</div>
-        <div className="flex items-center gap-4">
-          {user ? (
-            <>
-              <span className="text-xs text-zinc-500 hidden sm:inline-block">Olá, <span className="text-zinc-900 dark:text-zinc-100 font-medium">{user.email}</span></span>
-              <Button variant="ghost" size="sm" onClick={() => logout()} className="text-[10px] uppercase font-bold tracking-widest">
-                Sair
-              </Button>
-            </>
-          ) : (
-            <>
-              <Link href="/login" className="text-xs font-semibold text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100">
-                Login
-              </Link>
-              <Link href="/register" className="text-xs font-semibold px-4 py-2 bg-zinc-900 text-white rounded-full dark:bg-zinc-100 dark:text-zinc-900">
-                Cadastrar
-              </Link>
-            </>
-          )}
-        </div>
-      </nav>
+    <div className="relative min-h-screen flex items-center justify-center overflow-hidden bg-zinc-950">
+      {/* Background Mesh Gradient */}
+      <div className="absolute inset-0 z-0">
+        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-blue-500/20 blur-[120px] animate-pulse" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-purple-500/20 blur-[120px] animate-pulse delay-700" />
+      </div>
 
-      {/* Hero */}
-      <main className="flex flex-1 flex-col items-center justify-center px-6 py-20 text-center">
-        <p className="mb-4 text-xs font-semibold uppercase tracking-[0.3em] text-zinc-400">
-          Concierge digital
-        </p>
-        <h1 className="text-5xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50 sm:text-6xl">
-          Pedeform
-        </h1>
-        <p className="mt-4 max-w-sm text-lg leading-relaxed text-zinc-500 dark:text-zinc-400">
-          Experiência fluida para alta gastronomia — cardápio, salão e cozinha
-          em sincronia.
-        </p>
-
-        <div className="mt-10 flex flex-wrap justify-center gap-3">
-          <Link
-            href={mesaRoot("demo")}
-            className="inline-flex items-center justify-center rounded-full bg-zinc-900 px-7 py-3 text-sm font-medium text-white transition-colors hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
-          >
-            Experiência do cliente →
-          </Link>
-
-          {(user?.role === "kitchen" || user?.role === "admin") && (
-            <Link
-              href="/cozinha"
-              className="inline-flex items-center justify-center rounded-full border border-zinc-300 bg-white px-7 py-3 text-sm font-medium text-zinc-900 transition-colors hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100 dark:hover:bg-zinc-900"
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.8, ease: "easeOut" }}
+        className="relative z-10 w-full max-w-md p-1"
+      >
+        <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-3xl p-8 shadow-2xl space-y-8">
+          <div className="text-center space-y-2">
+            <motion.div
+              initial={{ scale: 0.8 }}
+              animate={{ scale: 1 }}
+              transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
+              className="inline-block p-3 rounded-2xl bg-zinc-900 border border-white/10 mb-2"
             >
-              Painel Cozinha
-            </Link>
-          )}
+              <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-blue-400 to-purple-400" />
+            </motion.div>
+            <h1 className="text-3xl font-bold tracking-tight text-white">Pedeform Access</h1>
+            <p className="text-zinc-400 text-sm">Entre na sua conta para continuar.</p>
+          </div>
 
-          {user?.role === "admin" && (
-            <Link
-              href="/admin/config"
-              className="inline-flex items-center justify-center rounded-full border border-zinc-300 bg-white px-7 py-3 text-sm font-medium text-zinc-900 transition-colors hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100 dark:hover:bg-zinc-900"
-            >
-              Configurar Firebase
-            </Link>
-          )}
+          <form onSubmit={handleLogin} className="space-y-5">
+            <div className="space-y-1.5 font-sans">
+              <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 ml-1">Email</label>
+              <input 
+                type="email" 
+                value={email} 
+                onChange={e => setEmail(e.target.value)}
+                className="w-full h-12 px-4 rounded-xl bg-white/5 border border-white/10 outline-none focus:ring-2 ring-blue-500/50 transition-all text-white placeholder:text-zinc-600"
+                placeholder="nome@exemplo.com"
+                required
+              />
+            </div>
 
-          <Link
-            href={reservas.root}
-            className="inline-flex items-center justify-center rounded-full border border-zinc-300 bg-white px-7 py-3 text-sm font-medium text-zinc-900 transition-colors hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100 dark:hover:bg-zinc-900"
-          >
-            Reservar mesa
-          </Link>
-        </div>
-      </main>
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 ml-1">Senha</label>
+              <input 
+                type="password" 
+                value={password} 
+                onChange={e => setPassword(e.target.value)}
+                className="w-full h-12 px-4 rounded-xl bg-white/5 border border-white/10 outline-none focus:ring-2 ring-blue-500/50 transition-all text-white placeholder:text-zinc-600"
+                placeholder="••••••••"
+                required
+              />
+            </div>
 
-      {/* Módulos */}
-      <section className="border-t border-zinc-200/80 bg-white px-6 py-14 dark:border-zinc-800 dark:bg-zinc-950">
-        <div className="mx-auto max-w-4xl">
-          <p className="mb-8 text-center text-xs font-semibold uppercase tracking-[0.2em] text-zinc-400">
-            Módulos disponíveis
-          </p>
-          <div className="grid gap-4 sm:grid-cols-3">
-            {[
-              {
-                title: "Cardápio & Pedido",
-                desc: "Cliente escaneia QR, navega pelo menu imersivo e envia à cozinha com um toque.",
-                href: mesaRoot("demo"),
-                cta: "Abrir mesa demo",
-              },
-              {
-                title: "Maître & Operação",
-                desc: "Visão em tempo real de todas as mesas, status e alertas via WebSocket.",
-                href: admin.operacao,
-                cta: "Ver operação",
-              },
-              {
-                title: "KDS — Cozinha",
-                desc: "Fila de pedidos por estação; avance o status diretamente na tela.",
-                href: admin.kds,
-                cta: "Abrir KDS",
-              },
-            ].map((m) => (
-              <div
-                key={m.href}
-                className="rounded-2xl border border-zinc-200/80 bg-zinc-50 p-5 dark:border-zinc-800 dark:bg-zinc-900"
-              >
-                <p className="font-medium text-zinc-900 dark:text-zinc-100">
-                  {m.title}
-                </p>
-                <p className="mt-2 text-sm leading-relaxed text-zinc-500 dark:text-zinc-400">
-                  {m.desc}
-                </p>
-                <Link
-                  href={m.href}
-                  className="mt-4 inline-block text-sm font-medium text-zinc-900 underline-offset-4 hover:underline dark:text-zinc-100"
-                >
-                  {m.cta} →
-                </Link>
-              </div>
-            ))}
+            <Button type="submit" disabled={loading} className="w-full h-12 rounded-xl bg-white text-zinc-950 hover:bg-zinc-200 transition-all font-bold text-sm shadow-[0_0_20px_rgba(255,255,255,0.1)]">
+              {loading ? <Spinner size="sm" /> : "Entrar agora →"}
+            </Button>
+          </form>
+
+          <div className="relative py-2">
+            <div className="absolute inset-0 flex items-center"><span className="w-full border-t border-white/10"></span></div>
+            <div className="relative flex justify-center text-[10px] uppercase tracking-widest font-bold"><span className="bg-transparent px-2 text-zinc-500">ou</span></div>
+          </div>
+
+          <div className="space-y-3">
+            <Button variant="ghost" onClick={() => router.push("/register")} className="w-full h-11 rounded-xl text-zinc-400 hover:text-white hover:bg-white/5 text-xs font-medium">
+              Não tem uma conta? <span className="text-blue-400 ml-1 underline decoration-blue-500/30">Cadastre-se</span>
+            </Button>
+            
+            <p className="text-center text-[10px] text-zinc-600 px-4">
+              Acesso exclusivo para clientes registrados, staff de cozinha e administradores.
+            </p>
+          </div>
+
+          {/* Database Info Notice */}
+          <div className="mt-8 pt-6 border-t border-white/10">
+            <p className="text-[9px] text-zinc-500 text-center leading-relaxed font-sans uppercase tracking-tighter">
+              Nota: O banco de dados Firebase está integrado. <br />
+              Certifique-se de configurar suas chaves no <code className="text-zinc-400">.env.local</code>.
+            </p>
           </div>
         </div>
-      </section>
-
-      {/* Mesas de demonstração */}
-      <section className="px-6 py-10">
-        <div className="mx-auto max-w-4xl">
-          <p className="mb-4 text-xs font-semibold uppercase tracking-[0.2em] text-zinc-400">
-            Mesas de demonstração
-          </p>
-          <div className="flex flex-wrap gap-2">
-            {DEMO_MESAS.map((id) => (
-              <Link
-                key={id}
-                href={mesaRoot(id)}
-                className="rounded-full border border-zinc-200 bg-white px-4 py-1.5 text-sm text-zinc-700 transition-colors hover:bg-zinc-100 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300 dark:hover:bg-zinc-900"
-              >
-                Mesa {id}
-              </Link>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Stack */}
-      <footer className="border-t border-zinc-200/80 px-6 py-8 dark:border-zinc-800">
-        <div className="mx-auto flex max-w-4xl flex-wrap items-center justify-between gap-4">
-          <p className="text-xs text-zinc-400">Pedeform — Alta gastronomia</p>
-          <div className="flex flex-wrap gap-2">
-            {["Next.js 16", "Firebase", "NestJS", "Tailwind", "Framer Motion"].map(
-              (t) => (
-                <span
-                  key={t}
-                  className="rounded-full border border-zinc-200 px-3 py-0.5 text-[11px] text-zinc-500 dark:border-zinc-800"
-                >
-                  {t}
-                </span>
-              ),
-            )}
-          </div>
-        </div>
-      </footer>
+      </motion.div>
     </div>
   );
 }
