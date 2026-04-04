@@ -244,7 +244,10 @@ export async function closeMesaBill(mesaId: string) {
   const snap = await getDocs(q);
   const now = serverTimestamp();
   
+  let totalSubtotal = 0;
   const updates = snap.docs.map(async (d) => {
+    const data = d.data() as Order;
+    totalSubtotal += data.subtotalCents;
     await updateDoc(doc(db, "pedidos", d.id), { status: "paid", updatedAt: now });
   });
   await Promise.all(updates);
@@ -252,7 +255,11 @@ export async function closeMesaBill(mesaId: string) {
   // Libera a mesa
   await updateDoc(doc(db, "mesas", mesaId), { status: "livre", convidados: 0, tempoMinutos: null });
 
-  return { mesaId, ok: true };
+  return { 
+    mesaId, 
+    ok: true, 
+    totalPaidCents: Math.round(totalSubtotal * 1.1) // Subtotal + 10% serviço
+  };
 }
 
 export async function updateOrderStatus(orderId: string, status: OrderStatus): Promise<Order> {
@@ -346,6 +353,25 @@ export async function fetchAdminOverview(): Promise<{
 export async function fetchAdminKpis() {
   const overview = await fetchAdminOverview();
   return overview.kpis;
+}
+
+export async function fetchAdminFinanceiro(): Promise<{
+  kpis: AdminKpis;
+  series: { label: string; faturamentoCents: number }[];
+}> {
+  const overview = await fetchAdminOverview();
+  return {
+    kpis: overview.kpis,
+    series: [
+      { label: "Seg", faturamentoCents: 0 },
+      { label: "Ter", faturamentoCents: 0 },
+      { label: "Qua", faturamentoCents: 0 },
+      { label: "Qui", faturamentoCents: 0 },
+      { label: "Sex", faturamentoCents: 0 },
+      { label: "Sáb", faturamentoCents: 0 },
+      { label: "Dom", faturamentoCents: overview.kpis.faturamentoHojeCents },
+    ],
+  };
 }
 
 export async function fetchAdminTables() {

@@ -8,10 +8,6 @@ import { mesaMenu } from "@/lib/routes";
  * Redireciona /mesa/[mesaId] → /mesa/[mesaId]/menu.
  * Usa client-side router.replace para compatibilidade com static export.
  */
-export function generateStaticParams() {
-  return [{ mesaId: "demo" }, { mesaId: "1" }, { mesaId: "2" }, { mesaId: "vip" }];
-}
-
 export default function MesaIndexPage() {
   const router = useRouter();
   const params = useParams<{ mesaId: string }>();
