@@ -9,10 +9,16 @@ const firebaseConfig: FirebaseOptions = {
   storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
   messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+  measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID,
 };
 
 // Inicializa o Firebase apenas se não houver um app já inicializado (importante no Next.js)
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
+
+// Analytics apenas no browser
+if (typeof window !== "undefined" && firebaseConfig.measurementId) {
+  import("firebase/analytics").then(({ getAnalytics }) => getAnalytics(app));
+}
 
 export const db = getFirestore(app);
 export const auth = getAuth(app);
