@@ -21,9 +21,26 @@ type AuthContextValue = {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
+import { useRouter } from "next/navigation";
+
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const router = useRouter();
   const [user, setUser] = useState<AppUser | null>(null);
   const [loading, setLoading] = useState(true);
+
+  // GitHub Pages SPA redirect handler
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const redirectPath = params.get("p");
+      if (redirectPath) {
+        // Remove 'p' from URL and replace with the intended path
+        params.delete("p");
+        const newSearch = params.toString();
+        router.replace(redirectPath + (newSearch ? "?" + newSearch : ""));
+      }
+    }
+  }, [router]);
 
   useEffect(() => {
     return onAuthStateChanged(auth, async (u) => {
