@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import type { Order, OrderStatus } from "@pedeform/shared";
 import { ORDER_STATUS_LABEL } from "@pedeform/shared";
-import { fetchAdminOrders, updateOrderStatus } from "@/lib/api-client";
+import { fetchAdminOrders, updateOrderStatus, subscribeKitchenOrders } from "@/lib/api-client";
 import { connectSocket } from "@/lib/socket-client";
 import { useToast } from "@/contexts/toast-context";
 import { Badge } from "@/components/ui/badge";
@@ -50,67 +50,20 @@ export function KdsView() {
   const [loading, setLoading] = useState(true);
   const [advancing, setAdvancing] = useState<Record<string, boolean>>({});
 
-  const load = useCallback(async () => {
-    try {
-      const data = await fetchAdminOrders("pending,preparing,almost_ready");
+  useEffect(() => {
+    setLoading(true);
+    const unsubscribe = subscribeKitchenOrders((data: Order[]) => {
       setOrders(data);
-    } catch {
-      toast("Erro ao carregar pedidos", "error");
-    } finally {
       setLoading(false);
-    }
-  }, [toast]);
-
-  useEffect(() => {
-    load();
-  }, [load]);
-
-  useEffect(() => {
-    const socket = connectSocket();
-    socket.emit("join-room", { room: "admin" });
-
-    const handleCreated = (order: Order) => {
-      if (KDS_STATUSES.includes(order.status)) {
-        setOrders((prev) => {
-          const exists = prev.find((o) => o.id === order.id);
-          return exists ? prev : [order, ...prev];
-        });
-        toast(`Novo pedido — Mesa ${order.mesaId}`, "info");
-      }
-    };
-
-    const handleUpdated = (order: Order) => {
-      if (KDS_STATUSES.includes(order.status)) {
-        setOrders((prev) =>
-          prev.map((o) => (o.id === order.id ? order : o)),
-        );
-      } else {
-        setOrders((prev) => prev.filter((o) => o.id !== order.id));
-      }
-    };
-
-    socket.on("order.created", handleCreated);
-    socket.on("order.updated", handleUpdated);
-
-    return () => {
-      socket.off("order.created", handleCreated);
-      socket.off("order.updated", handleUpdated);
-      socket.emit("leave-room", { room: "admin" });
-    };
-  }, [toast]);
+    });
+    return () => unsubscribe();
+  }, []);
 
   async function advance(orderId: string, next: OrderStatus) {
     setAdvancing((p) => ({ ...p, [orderId]: true }));
     try {
-      const updated = await updateOrderStatus(orderId, next);
-      if (KDS_STATUSES.includes(updated.status)) {
-        setOrders((prev) =>
-          prev.map((o) => (o.id === updated.id ? updated : o)),
-        );
-      } else {
-        setOrders((prev) => prev.filter((o) => o.id !== updated.id));
-        toast(`Pedido ${orderId} marcado como ${ORDER_STATUS_LABEL[next]}`, "success");
-      }
+      await updateOrderStatus(orderId, next);
+      toast(`Pedido ${orderId} atualizado para ${ORDER_STATUS_LABEL[next]}`, "success");
     } catch {
       toast("Erro ao atualizar pedido", "error");
     } finally {

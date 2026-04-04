@@ -1,3 +1,21 @@
+import {
+  collection,
+  doc,
+  getDocs,
+  getDoc,
+  setDoc,
+  addDoc,
+  updateDoc,
+  deleteDoc,
+  query,
+  where,
+  orderBy,
+  onSnapshot,
+  Timestamp,
+  serverTimestamp,
+  limit,
+} from "firebase/firestore";
+import { db } from "./firebase";
 import type {
   AdminKpis,
   FinanceiroDay,
@@ -10,143 +28,29 @@ import type {
   TableReservation,
   Table,
 } from "@pedeform/shared";
-import {
-  MOCK_FINANCEIRO_SERIES,
-  MOCK_MENU_CATEGORIES,
-  MOCK_MENU_ITEMS,
-  MOCK_SEED_ORDERS,
-  MOCK_TABLES,
-} from "@pedeform/shared";
 
-type LocalDb = {
-  menuItems: SharedMenuItem[];
-  tables: Table[];
-  reservations: TableReservation[];
-  orders: Order[];
-};
-
-const DB_KEY = "pedeform.mock.db.v1";
-
-function clone<T>(value: T): T {
-  if (typeof structuredClone === "function") return structuredClone(value);
-  return JSON.parse(JSON.stringify(value)) as T;
-}
-
-function createSeedDb(): LocalDb {
-  return {
-    menuItems: clone(MOCK_MENU_ITEMS),
-    tables: clone(MOCK_TABLES),
-    reservations: [],
-    orders: clone(MOCK_SEED_ORDERS),
-  };
-}
-
-let memoryDb: LocalDb = createSeedDb();
-
-function readDb(): LocalDb {
-  if (typeof window === "undefined") return memoryDb;
-  try {
-    const raw = window.localStorage.getItem(DB_KEY);
-    if (!raw) {
-      window.localStorage.setItem(DB_KEY, JSON.stringify(memoryDb));
-      return memoryDb;
-    }
-    const parsed = JSON.parse(raw) as LocalDb;
-    if (!parsed?.menuItems || !parsed?.tables || !parsed?.orders || !parsed?.reservations) {
-      window.localStorage.setItem(DB_KEY, JSON.stringify(memoryDb));
-      return memoryDb;
-    }
-    memoryDb = parsed;
-    return parsed;
-  } catch {
-    return memoryDb;
-  }
-}
-
-function writeDb(next: LocalDb) {
-  memoryDb = next;
-  if (typeof window === "undefined") return;
-  window.localStorage.setItem(DB_KEY, JSON.stringify(next));
-}
-
-async function simulate<T>(value: T): Promise<T> {
-  return Promise.resolve(clone(value));
-}
-
-function nextOrderId(orders: Order[]) {
-  const max = orders.reduce((acc, order) => {
-    const match = order.id.match(/order_(\d+)/);
-    if (!match) return acc;
-    return Math.max(acc, Number(match[1]));
-  }, 0);
-  return `order_${String(max + 1).padStart(4, "0")}`;
-}
-
-function nextReservationId(reservations: TableReservation[]) {
-  const max = reservations.reduce((acc, reservation) => {
-    const match = reservation.id.match(/reservation_(\d+)/);
-    if (!match) return acc;
-    return Math.max(acc, Number(match[1]));
-  }, 0);
-  return `reservation_${String(max + 1).padStart(4, "0")}`;
-}
-
-function slugifyName(name: string) {
-  const slug = name
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
-  return slug || `item-${Date.now()}`;
-}
-
-function getKpis(db: LocalDb): AdminKpis {
-  const occupied = db.tables.filter((t) => t.status !== "livre");
-  const activeOrders = db.orders.filter(
-    (o) => o.status !== "paid" && o.status !== "served",
-  );
-  const paidOrders = db.orders.filter((o) => o.status === "paid");
-  const faturamento = paidOrders.reduce((s, o) => s + o.subtotalCents, 0);
-  const ticketMedio =
-    paidOrders.length > 0 ? Math.round(faturamento / paidOrders.length) : 21500;
-  const permanencias = occupied
-    .map((t) => t.tempoMinutos ?? 0)
-    .filter((m) => m > 0);
-  const permanenciaMedia =
-    permanencias.length > 0
-      ? Math.round(permanencias.reduce((a, b) => a + b, 0) / permanencias.length)
-      : 58;
-
-  return {
-    mesasOcupadas: occupied.length,
-    mesasTotal: db.tables.length,
-    pedidosAtivos: activeOrders.length,
-    ticketMedioCents: ticketMedio,
-    faturamentoHojeCents: faturamento > 0 ? faturamento : 428900,
-    permanenciaMediaMin: permanenciaMedia,
-  };
-}
-
-function getFinanceiroSeries(db: LocalDb): FinanceiroDay[] {
-  const dom = getKpis(db).faturamentoHojeCents;
-  return MOCK_FINANCEIRO_SERIES.map((day) =>
-    day.label === "Dom" ? { ...day, faturamentoCents: dom } : day,
-  );
-}
+// Utility to convert Firestore Timestamp to ISO string
+const toIso = (ts: any) => (ts instanceof Timestamp ? ts.toDate().toISOString() : ts);
 
 // ─── Menu ────────────────────────────────────────────────────────────────────
 
-export function fetchMenuCategories() {
-  return simulate<SharedMenuCategory[]>(MOCK_MENU_CATEGORIES);
+export async function fetchMenuCategories(): Promise<SharedMenuCategory[]> {
+  const snap = await getDocs(collection(db, "categorias"));
+  if (snap.empty) {
+    // If empty, return a default set for now or handle as needed
+    return [];
+  }
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() }) as SharedMenuCategory);
 }
 
-export function fetchMenuItems(category?: string) {
-  const db = readDb();
-  const data = category
-    ? db.menuItems.filter((item) => item.category === category)
-    : db.menuItems;
-  return simulate<SharedMenuItem[]>(data);
+export async function fetchMenuItems(category?: string): Promise<SharedMenuItem[]> {
+  const colRef = collection(db, "cardapio");
+  let q = query(colRef);
+  if (category) {
+    q = query(colRef, where("category", "==", category));
+  }
+  const snap = await getDocs(q);
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() }) as SharedMenuItem);
 }
 
 export interface UpsertMenuItemInput {
@@ -160,250 +64,309 @@ export interface UpsertMenuItemInput {
   imageUrl?: string;
 }
 
-export function createMenuItem(input: UpsertMenuItemInput) {
-  const db = readDb();
-  const baseId = input.id?.trim() || slugifyName(input.name);
-  const exists = new Set(db.menuItems.map((item) => item.id));
-  let id = baseId;
-  let suffix = 1;
-  while (exists.has(id)) {
-    id = `${baseId}-${suffix++}`;
-  }
-  const created: SharedMenuItem = {
-    id,
+export async function createMenuItem(input: UpsertMenuItemInput): Promise<SharedMenuItem> {
+  const docRef = input.id ? doc(db, "cardapio", input.id) : doc(collection(db, "cardapio"));
+  const data = {
     category: input.category,
     name: input.name.trim(),
     description: input.description.trim(),
     priceCents: input.priceCents,
-    sommelierNote: input.sommelierNote?.trim() || undefined,
+    sommelierNote: input.sommelierNote?.trim() || null,
     imageGradient: input.imageGradient || "from-zinc-900/40 to-zinc-950",
-    imageUrl: input.imageUrl,
+    imageUrl: input.imageUrl || null,
   };
-  writeDb({ ...db, menuItems: [created, ...db.menuItems] });
-  return simulate(created);
+  await setDoc(docRef, data);
+  return { id: docRef.id, ...data } as SharedMenuItem;
 }
 
-export function updateMenuItem(id: string, input: Partial<UpsertMenuItemInput>) {
-  const db = readDb();
-  const idx = db.menuItems.findIndex((item) => item.id === id);
-  if (idx < 0) throw new Error("Produto não encontrado.");
-  const updated: SharedMenuItem = {
-    ...db.menuItems[idx],
-    ...input,
-    name: input.name?.trim() ?? db.menuItems[idx]!.name,
-    description: input.description?.trim() ?? db.menuItems[idx]!.description,
-    sommelierNote: input.sommelierNote?.trim() || undefined,
-  };
-  const menuItems = [...db.menuItems];
-  menuItems[idx] = updated;
-  writeDb({ ...db, menuItems });
-  return simulate(updated);
+export async function updateMenuItem(id: string, input: Partial<UpsertMenuItemInput>) {
+  const docRef = doc(db, "cardapio", id);
+  const cleanInput = Object.fromEntries(
+    Object.entries(input).filter(([_, v]) => v !== undefined)
+  );
+  await updateDoc(docRef, cleanInput);
+  const snap = await getDoc(docRef);
+  return { id: snap.id, ...snap.data() } as SharedMenuItem;
 }
 
-export function deleteMenuItem(id: string) {
-  const db = readDb();
-  const menuItems = db.menuItems.filter((item) => item.id !== id);
-  writeDb({ ...db, menuItems });
-  return simulate({ ok: true as const, deletedId: id });
+export async function deleteMenuItem(id: string) {
+  await deleteDoc(doc(db, "cardapio", id));
+  return { ok: true as const, deletedId: id };
 }
 
-export function uploadMenuItemPhoto(id: string, payload: { fileName: string; dataUrl: string }) {
-  const db = readDb();
-  const idx = db.menuItems.findIndex((item) => item.id === id);
-  if (idx < 0) throw new Error("Produto não encontrado.");
-  const updated: SharedMenuItem = {
-    ...db.menuItems[idx],
-    imageUrl: payload.dataUrl,
-  };
-  const menuItems = [...db.menuItems];
-  menuItems[idx] = updated;
-  writeDb({ ...db, menuItems });
-  return simulate(updated);
+export async function uploadMenuItemPhoto(id: string, payload: { fileName: string; dataUrl: string }) {
+  // Ideally use Firebase Storage, but for now we follow the mock's dataUrl pattern
+  const docRef = doc(db, "cardapio", id);
+  await updateDoc(docRef, { imageUrl: payload.dataUrl });
+  const snap = await getDoc(docRef);
+  return { id: snap.id, ...snap.data() } as SharedMenuItem;
 }
 
 // ─── Mesas ───────────────────────────────────────────────────────────────────
 
-export function fetchTables() {
-  const db = readDb();
-  return simulate<Table[]>(db.tables);
+export async function fetchTables(): Promise<Table[]> {
+  const snap = await getDocs(collection(db, "mesas"));
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Table);
 }
 
-export function fetchTable(id: string) {
-  const db = readDb();
-  const table = db.tables.find((t) => t.id === id);
-  if (!table) throw new Error("Mesa não encontrada.");
-  return simulate<Table>(table);
+export async function fetchTable(id: string): Promise<Table> {
+  const snap = await getDoc(doc(db, "mesas", id));
+  if (!snap.exists()) throw new Error("Mesa não encontrada.");
+  return { id: snap.id, ...snap.data() } as Table;
 }
 
-export function fetchTableReservations() {
-  const db = readDb();
-  const reservations = [...db.reservations].sort(
-    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
-  );
-  return simulate<TableReservation[]>(reservations);
+export async function fetchTableReservations(): Promise<TableReservation[]> {
+  const q = query(collection(db, "reservas"), orderBy("createdAt", "desc"));
+  const snap = await getDocs(q);
+  return snap.docs.map((d) => {
+    const data = d.data();
+    return { ...data, id: d.id, createdAt: toIso(data.createdAt) } as TableReservation;
+  });
 }
 
-export function reserveTable(
+export async function reserveTable(
   tableId: string,
   payload: { guestName: string; guests: number; reservedFor: string; notes?: string },
 ) {
-  const db = readDb();
-  const tableIdx = db.tables.findIndex((table) => table.id === tableId);
-  if (tableIdx < 0) throw new Error("Mesa não encontrada.");
-  const table = db.tables[tableIdx]!;
-  if (table.status !== "livre" && table.status !== "reservada") {
-    throw new Error("Mesa indisponível para reserva.");
-  }
-  const reservation: TableReservation = {
-    id: nextReservationId(db.reservations),
+  const tableRef = doc(db, "mesas", tableId);
+  const reservationRef = collection(db, "reservas");
+
+  const reservation = {
     tableId,
     guestName: payload.guestName.trim(),
     guests: payload.guests,
     reservedFor: payload.reservedFor,
-    notes: payload.notes?.trim() || undefined,
-    createdAt: new Date().toISOString(),
+    notes: payload.notes?.trim() || null,
+    createdAt: serverTimestamp(),
   };
-  const tables = [...db.tables];
-  tables[tableIdx] = {
-    ...table,
+
+  const res = await addDoc(reservationRef, reservation);
+  await updateDoc(tableRef, {
     status: "reservada",
     convidados: payload.guests,
     tempoMinutos: null,
-  };
-  writeDb({
-    ...db,
-    tables,
-    reservations: [reservation, ...db.reservations],
   });
-  return simulate<TableReservation>(reservation);
+
+  return { id: res.id, ...reservation, createdAt: new Date().toISOString() } as unknown as TableReservation;
 }
 
 // ─── Pedidos ─────────────────────────────────────────────────────────────────
 
-export function fetchOrdersByMesa(mesaId: string) {
-  const db = readDb();
-  const orders = db.orders
-    .filter((order) => order.mesaId === mesaId)
-    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-  return simulate<Order[]>(orders);
-}
-
-export function fetchOrder(orderId: string) {
-  const db = readDb();
-  const order = db.orders.find((item) => item.id === orderId);
-  if (!order) throw new Error("Pedido não encontrado.");
-  return simulate<Order>(order);
-}
-
-export function createOrder(mesaId: string, items: OrderItem[]) {
-  const db = readDb();
-  const now = new Date().toISOString();
-  const subtotalCents = items.reduce(
-    (sum, i) => sum + i.unitPriceCents * i.quantity,
-    0,
+export async function fetchOrdersByMesa(mesaId: string): Promise<Order[]> {
+  const q = query(
+    collection(db, "pedidos"),
+    where("mesaId", "==", mesaId),
+    orderBy("createdAt", "desc")
   );
-  const created: Order = {
-    id: nextOrderId(db.orders),
+  const snap = await getDocs(q);
+  return snap.docs.map((d) => {
+    const data = d.data();
+    return {
+      ...data,
+      id: d.id,
+      createdAt: toIso(data.createdAt),
+      updatedAt: toIso(data.updatedAt),
+    } as Order;
+  });
+}
+
+export function subscribeOrdersByMesa(mesaId: string, callback: (orders: Order[]) => void) {
+  const q = query(
+    collection(db, "pedidos"),
+    where("mesaId", "==", mesaId),
+    orderBy("createdAt", "desc")
+  );
+  return onSnapshot(q, (snap) => {
+    const orders = snap.docs.map((d) => {
+      const data = d.data();
+      return {
+        ...data,
+        id: d.id,
+        createdAt: toIso(data.createdAt),
+        updatedAt: toIso(data.updatedAt),
+      } as Order;
+    });
+    callback(orders);
+  });
+}
+
+export async function fetchOrder(orderId: string): Promise<Order> {
+  const snap = await getDoc(doc(db, "pedidos", orderId));
+  if (!snap.exists()) throw new Error("Pedido não encontrado.");
+  const data = snap.data();
+  return {
+    ...data,
+    id: snap.id,
+    createdAt: toIso(data.createdAt),
+    updatedAt: toIso(data.updatedAt),
+  } as Order;
+}
+
+export async function createOrder(mesaId: string, items: OrderItem[]): Promise<Order> {
+  const subtotalCents = items.reduce((sum, i) => sum + i.unitPriceCents * i.quantity, 0);
+  const now = serverTimestamp();
+  
+  const orderData = {
     mesaId,
     items,
-    status: "pending",
+    status: "pending" as OrderStatus,
     subtotalCents,
     createdAt: now,
     updatedAt: now,
   };
-  const tableIdx = db.tables.findIndex((table) => table.id === mesaId);
-  const tables = [...db.tables];
-  if (tableIdx >= 0) {
-    const table = tables[tableIdx]!;
-    if (table.status === "livre" || table.status === "reservada") {
-      tables[tableIdx] = { ...table, status: "em_atendimento", tempoMinutos: 0 };
+
+  const docRef = await addDoc(collection(db, "pedidos"), orderData);
+  
+  // Atualiza status da mesa
+  const tableRef = doc(db, "mesas", mesaId);
+  const tableSnap = await getDoc(tableRef);
+  if (tableSnap.exists()) {
+    const tableData = tableSnap.data();
+    if (tableData.status === "livre" || tableData.status === "reservada") {
+      await updateDoc(tableRef, { status: "em_atendimento", tempoMinutos: 0 });
     }
   }
-  writeDb({ ...db, tables, orders: [created, ...db.orders] });
-  return simulate<Order>(created);
+
+  return { 
+    id: docRef.id, 
+    ...orderData, 
+    createdAt: new Date().toISOString(), 
+    updatedAt: new Date().toISOString() 
+  } as unknown as Order;
 }
 
-/** Fecha a conta: todos os pedidos em aberto da mesa → pagos. */
-export function closeMesaBill(mesaId: string) {
-  const db = readDb();
-  const now = new Date().toISOString();
-  const paidOrders: Order[] = [];
-  const orders = db.orders.map((order) => {
-    if (order.mesaId !== mesaId || order.status === "paid") return order;
-    const updated = { ...order, status: "paid" as const, updatedAt: now };
-    paidOrders.push(updated);
-    return updated;
+export async function closeMesaBill(mesaId: string) {
+  const q = query(
+    collection(db, "pedidos"),
+    where("mesaId", "==", mesaId),
+    where("status", "!=", "paid")
+  );
+  const snap = await getDocs(q);
+  const now = serverTimestamp();
+  
+  const updates = snap.docs.map(async (d) => {
+    await updateDoc(doc(db, "pedidos", d.id), { status: "paid", updatedAt: now });
   });
-  const totalPaidCents = paidOrders.reduce((sum, order) => sum + order.subtotalCents, 0);
-  writeDb({ ...db, orders });
-  return simulate({ mesaId, orders: paidOrders, totalPaidCents });
+  await Promise.all(updates);
+
+  // Libera a mesa
+  await updateDoc(doc(db, "mesas", mesaId), { status: "livre", convidados: 0, tempoMinutos: null });
+
+  return { mesaId, ok: true };
 }
 
-export function updateOrderStatus(orderId: string, status: OrderStatus) {
-  const db = readDb();
-  const idx = db.orders.findIndex((order) => order.id === orderId);
-  if (idx < 0) throw new Error("Pedido não encontrado.");
-  const updated: Order = {
-    ...db.orders[idx]!,
-    status,
-    updatedAt: new Date().toISOString(),
-  };
-  const orders = [...db.orders];
-  orders[idx] = updated;
-  writeDb({ ...db, orders });
-  return simulate(updated);
+export async function updateOrderStatus(orderId: string, status: OrderStatus): Promise<Order> {
+  const docRef = doc(db, "pedidos", orderId);
+  await updateDoc(docRef, { status, updatedAt: serverTimestamp() });
+  const snap = await getDoc(docRef);
+  const data = snap.data();
+  return {
+    ...data,
+    id: snap.id,
+    createdAt: toIso(data?.createdAt),
+    updatedAt: toIso(data?.updatedAt),
+  } as Order;
 }
 
-function filterOrdersByStatus(all: Order[], status?: string) {
-  if (!status) return all;
-  const statuses = status.split(",").map((s) => s.trim()) as OrderStatus[];
-  return all.filter((order) => statuses.includes(order.status));
+// ─── Kitchen (Cozinha) ────────────────────────────────────────────────────────
+
+/** Busca pedidos ativos para a cozinha: pendentes, preparando ou quase prontos. */
+export async function fetchKitchenOrders(): Promise<Order[]> {
+  const q = query(
+    collection(db, "pedidos"),
+    where("status", "in", ["pending", "preparing", "almost_ready"]),
+    orderBy("createdAt", "asc")
+  );
+  const snap = await getDocs(q);
+  return snap.docs.map((d) => {
+    const data = d.data();
+    return {
+      ...data,
+      id: d.id,
+      createdAt: toIso(data.createdAt),
+      updatedAt: toIso(data.updatedAt),
+    } as Order;
+  });
 }
 
-function sortTablesByName(tables: Table[]) {
-  return [...tables].sort((a, b) => a.nome.localeCompare(b.nome));
+export function subscribeKitchenOrders(callback: (orders: Order[]) => void) {
+  const q = query(
+    collection(db, "pedidos"),
+    where("status", "in", ["pending", "preparing", "almost_ready", "served"]),
+    orderBy("createdAt", "desc"),
+    limit(50)
+  );
+  return onSnapshot(q, (snap) => {
+    const orders = snap.docs.map((d) => {
+      const data = d.data();
+      return {
+        ...data,
+        id: d.id,
+        createdAt: toIso(data.createdAt),
+        updatedAt: toIso(data.updatedAt),
+      } as Order;
+    });
+    callback(orders);
+  });
 }
 
 // ─── Admin ───────────────────────────────────────────────────────────────────
 
-export function fetchAdminOverview(): Promise<{
+export async function fetchAdminOverview(): Promise<{
   kpis: AdminKpis;
   tables: Table[];
   financeiro: FinanceiroDay[];
 }> {
-  const db = readDb();
-  return simulate({
-    kpis: getKpis(db),
-    tables: sortTablesByName(db.tables),
-    financeiro: getFinanceiroSeries(db),
+  const tables = await fetchTables();
+  const ordersSnap = await getDocs(collection(db, "pedidos"));
+  const orders = ordersSnap.docs.map(d => d.data() as Order);
+
+  const occupied = tables.filter((t) => t.status !== "livre");
+  const activeOrders = orders.filter((o) => o.status !== "paid" && o.status !== "served");
+  const paidOrders = orders.filter((o) => o.status === "paid");
+  const faturamento = paidOrders.reduce((s, o) => s + o.subtotalCents, 0);
+  const ticketMedio = paidOrders.length > 0 ? Math.round(faturamento / paidOrders.length) : 0;
+  
+  const kpis: AdminKpis = {
+    mesasOcupadas: occupied.length,
+    mesasTotal: tables.length,
+    pedidosAtivos: activeOrders.length,
+    ticketMedioCents: ticketMedio,
+    faturamentoHojeCents: faturamento,
+    permanenciaMediaMin: 0, // Simplified for now
+  };
+
+  return {
+    kpis,
+    tables: tables.sort((a, b) => a.id.localeCompare(b.id)),
+    financeiro: [], // Simplified for now
+  };
+}
+
+export async function fetchAdminKpis() {
+  const overview = await fetchAdminOverview();
+  return overview.kpis;
+}
+
+export async function fetchAdminTables() {
+  return fetchTables();
+}
+
+export async function fetchAdminOrders(status?: string) {
+  const colRef = collection(db, "pedidos");
+  let q = query(colRef, orderBy("createdAt", "desc"));
+  if (status) {
+    const statuses = status.split(",").map((s) => s.trim()) as OrderStatus[];
+    q = query(colRef, where("status", "in", statuses), orderBy("createdAt", "desc"));
+  }
+  const snap = await getDocs(q);
+  return snap.docs.map((d) => {
+    const data = d.data();
+    return {
+      ...data,
+      id: d.id,
+      createdAt: toIso(data.createdAt),
+      updatedAt: toIso(data.updatedAt),
+    } as Order;
   });
-}
-
-export function fetchAdminKpis() {
-  const db = readDb();
-  return simulate<AdminKpis>(getKpis(db));
-}
-
-export function fetchAdminTables() {
-  const db = readDb();
-  return simulate<Table[]>(sortTablesByName(db.tables));
-}
-
-export function fetchAdminFinanceiro(): Promise<{
-  kpis: AdminKpis;
-  series: FinanceiroDay[];
-}> {
-  const db = readDb();
-  return simulate({
-    kpis: getKpis(db),
-    series: getFinanceiroSeries(db),
-  });
-}
-
-export function fetchAdminOrders(status?: string) {
-  const db = readDb();
-  const filtered = filterOrdersByStatus(db.orders, status).sort(
-    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
-  );
-  return simulate<Order[]>(filtered);
 }

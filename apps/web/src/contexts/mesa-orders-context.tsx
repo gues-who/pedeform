@@ -89,28 +89,14 @@ export function MesaOrdersProvider({
   );
 
   useEffect(() => {
-    const socket = connectSocket();
-    socket.emit("join-room", { room: `mesa:${mesaId}` });
-
-    const handleOrderCreated = (order: Order) => {
-      if (order.mesaId !== mesaId) return;
-      setAllOrders((prev) => upsertOrder(prev, order));
-      setSubmitState("success");
-    };
-
-    const handleOrderUpdated = (order: Order) => {
-      if (order.mesaId !== mesaId) return;
-      setAllOrders((prev) => upsertOrder(prev, order));
-    };
-
-    socket.on("order.created", handleOrderCreated);
-    socket.on("order.updated", handleOrderUpdated);
-
-    return () => {
-      socket.off("order.created", handleOrderCreated);
-      socket.off("order.updated", handleOrderUpdated);
-      socket.emit("leave-room", { room: `mesa:${mesaId}` });
-    };
+    setOrdersLoading(true);
+    const { subscribeOrdersByMesa } = require("@/lib/api-client");
+    const unsubscribe = subscribeOrdersByMesa(mesaId, (data: Order[]) => {
+      setAllOrders(data);
+      setOrdersLoading(false);
+      setOrdersError(null);
+    });
+    return () => unsubscribe();
   }, [mesaId]);
 
   const value = useMemo(

@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@pedeform/shared": "file:../../packages/shared",
+    "firebase": "^12.11.0",
     "framer-motion": "^12.4.7",
     "next": "16.2.1",
     "react": "19.2.4",

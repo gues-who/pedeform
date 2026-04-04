@@ -11,16 +11,31 @@ import { Card, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { SkeletonCard } from "@/components/ui/skeleton";
 
+import { useAuth } from "@/contexts/auth-context";
+import { useRouter } from "next/navigation";
+
 export default function AdminHomePage() {
+  const { user, loading: authLoading } = useAuth();
+  const router = useRouter();
   const [kpis, setKpis] = useState<AdminKpis | null>(null);
 
   useEffect(() => {
-    fetchAdminKpis()
-      .then((data) => { setKpis(data); })
-      .catch(() => { setKpis(mockKpis); });
-  }, []);
+    if (!authLoading && !user) {
+      router.push("/login?callback=/admin");
+    } else if (!authLoading && user && user.role !== "admin") {
+      router.push("/login?error=unauthorized");
+    }
+  }, [user, authLoading, router]);
 
-  if (!kpis) {
+  useEffect(() => {
+    if (user?.role === "admin") {
+      fetchAdminKpis()
+        .then((data) => { setKpis(data); })
+        .catch(() => { setKpis(mockKpis); });
+    }
+  }, [user]);
+
+  if (authLoading || !user || !kpis) {
     return (
       <div className="mx-auto max-w-4xl space-y-4">
         <div className="h-8 w-48 animate-pulse rounded-lg bg-zinc-200 dark:bg-zinc-800" />
@@ -42,7 +57,7 @@ export default function AdminHomePage() {
             Resumo operacional e financeiro.
           </p>
         </div>
-        <Badge tone="success">Mock ativo</Badge>
+        <Badge tone="success">Firebase Ativo</Badge>
       </header>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

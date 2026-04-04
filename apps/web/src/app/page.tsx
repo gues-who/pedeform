@@ -1,11 +1,41 @@
+"use client";
+
 import Link from "next/link";
 import { admin, mesaRoot, reservas } from "@/lib/routes";
+import { useAuth } from "@/contexts/auth-context";
+import { Button } from "@/components/ui/button";
 
 const DEMO_MESAS = ["1", "2", "demo", "vip"];
 
 export default function Home() {
+  const { user, logout } = useAuth();
+
   return (
     <div className="flex min-h-screen flex-col bg-zinc-50 dark:bg-black">
+      {/* Navbar Minimalista */}
+      <nav className="flex items-center justify-between px-6 py-4 border-b border-zinc-200 dark:border-zinc-800">
+        <div className="text-xl font-bold tracking-tighter">Pedeform</div>
+        <div className="flex items-center gap-4">
+          {user ? (
+            <>
+              <span className="text-xs text-zinc-500 hidden sm:inline-block">Olá, <span className="text-zinc-900 dark:text-zinc-100 font-medium">{user.email}</span></span>
+              <Button variant="ghost" size="sm" onClick={() => logout()} className="text-[10px] uppercase font-bold tracking-widest">
+                Sair
+              </Button>
+            </>
+          ) : (
+            <>
+              <Link href="/login" className="text-xs font-semibold text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100">
+                Login
+              </Link>
+              <Link href="/register" className="text-xs font-semibold px-4 py-2 bg-zinc-900 text-white rounded-full dark:bg-zinc-100 dark:text-zinc-900">
+                Cadastrar
+              </Link>
+            </>
+          )}
+        </div>
+      </nav>
+
       {/* Hero */}
       <main className="flex flex-1 flex-col items-center justify-center px-6 py-20 text-center">
         <p className="mb-4 text-xs font-semibold uppercase tracking-[0.3em] text-zinc-400">
@@ -26,12 +56,25 @@ export default function Home() {
           >
             Experiência do cliente →
           </Link>
-          <Link
-            href={admin.root}
-            className="inline-flex items-center justify-center rounded-full border border-zinc-300 bg-white px-7 py-3 text-sm font-medium text-zinc-900 transition-colors hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100 dark:hover:bg-zinc-900"
-          >
-            Painel admin
-          </Link>
+
+          {(user?.role === "kitchen" || user?.role === "admin") && (
+            <Link
+              href="/cozinha"
+              className="inline-flex items-center justify-center rounded-full border border-zinc-300 bg-white px-7 py-3 text-sm font-medium text-zinc-900 transition-colors hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100 dark:hover:bg-zinc-900"
+            >
+              Painel Cozinha
+            </Link>
+          )}
+
+          {user?.role === "admin" && (
+            <Link
+              href="/admin/config"
+              className="inline-flex items-center justify-center rounded-full border border-zinc-300 bg-white px-7 py-3 text-sm font-medium text-zinc-900 transition-colors hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100 dark:hover:bg-zinc-900"
+            >
+              Configurar Firebase
+            </Link>
+          )}
+
           <Link
             href={reservas.root}
             className="inline-flex items-center justify-center rounded-full border border-zinc-300 bg-white px-7 py-3 text-sm font-medium text-zinc-900 transition-colors hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100 dark:hover:bg-zinc-900"
@@ -106,12 +149,6 @@ export default function Home() {
                 Mesa {id}
               </Link>
             ))}
-            <p className="self-center text-xs text-zinc-400">
-              ou use{" "}
-              <code className="rounded bg-zinc-200 px-1 dark:bg-zinc-800">
-                /mesa/&lt;qualquer-id&gt;
-              </code>
-            </p>
           </div>
         </div>
       </section>
@@ -121,7 +158,7 @@ export default function Home() {
         <div className="mx-auto flex max-w-4xl flex-wrap items-center justify-between gap-4">
           <p className="text-xs text-zinc-400">Pedeform — Alta gastronomia</p>
           <div className="flex flex-wrap gap-2">
-            {["Next.js 16", "NestJS", "Socket.IO", "Tailwind", "Framer Motion"].map(
+            {["Next.js 16", "Firebase", "NestJS", "Tailwind", "Framer Motion"].map(
               (t) => (
                 <span
                   key={t}
