@@ -1,5 +1,6 @@
 import type { NextConfig } from "next";
 import withPWAInit from "@ducanh2912/next-pwa";
+import { loadEnvConfig } from "@next/env";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -8,11 +9,7 @@ const webAppDir = path.dirname(fileURLToPath(import.meta.url));
 const monorepoRoot = path.resolve(webAppDir, "../..");
 
 /**
- * `loadEnvConfig` de `@next/env` pode usar cache global e ser influenciado pelo `cwd`.
- * Além disso, o Next carrega `./apps/web/.env*` por padrão.
- *
- * Aqui fazemos um merge manual estrito apenas de arquivos na raiz do monorepo, 
- * para garantir que NEXT_PUBLIC_FIREBASE_* estejam disponíveis se estiverem na raiz ou em apps/web/.
+ * Merge manual: raiz do monorepo (só preenche chaves ainda indefinidas).
  */
 function mergeEnvFile(filePath: string) {
   if (!fs.existsSync(filePath)) return;
@@ -31,16 +28,21 @@ function mergeEnvFile(filePath: string) {
     ) {
       val = val.slice(1, -1);
     }
-    // Não sobrescreve se já existir (mantém prioridade de .env.local da pasta apps/web)
     if (process.env[key] === undefined) {
       process.env[key] = val;
     }
   }
 }
 
-// Carregar da raiz do monorepo se existirem
 mergeEnvFile(path.join(monorepoRoot, ".env.local"));
 mergeEnvFile(path.join(monorepoRoot, ".env"));
+
+/**
+ * O Next pode inicializar `@next/env` antes do `next.config`; o cache global impede reler `apps/web/.env*`.
+ * Carregamos explicitamente a pasta do app (caminho absoluto) com `forceReload` para `NEXT_PUBLIC_*` entrarem no bundle.
+ */
+const isDev = process.env.NODE_ENV !== "production";
+loadEnvConfig(webAppDir, isDev, console, true);
 
 const isGhPages = process.env.GITHUB_ACTIONS === "true";
 
