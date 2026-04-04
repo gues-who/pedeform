@@ -13,9 +13,12 @@
     "lint": "npm run lint -w @pedeform/web && npm run lint -w @pedeform/api"
   },
   "engines": {
-    "node": ">=20"
+    "node": "20.x"
   },
   "devDependencies": {
     "concurrently": "^9.1.2"
+  },
+  "dependencies": {
+    "firebase": "^12.11.0"
   }
 }
