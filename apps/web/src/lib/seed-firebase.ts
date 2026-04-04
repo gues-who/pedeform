@@ -7,6 +7,9 @@ import {
 } from "@pedeform/shared";
 
 export async function seedFirebase() {
+  if (!db) {
+    throw new Error("Firebase não configurado. Defina NEXT_PUBLIC_FIREBASE_* no ambiente de build.");
+  }
   const batch = writeBatch(db);
 
   console.log("Seeding Categorias...");

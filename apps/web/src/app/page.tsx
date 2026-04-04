@@ -7,9 +7,6 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/auth-context";
 import { useToast } from "@/contexts/toast-context";
 import { Spinner } from "@/components/ui/spinner";
-import { auth, db } from "@/lib/firebase";
-import { doc, getDoc } from "firebase/firestore";
-
 export default function RootLoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");

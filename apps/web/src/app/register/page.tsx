@@ -20,6 +20,10 @@ export default function RegisterPage() {
 
   async function handleRegister(e: React.FormEvent) {
     e.preventDefault();
+    if (!auth || !db) {
+      toast("Cadastro indisponível: configure o Firebase (variáveis NEXT_PUBLIC_*) para este ambiente.", "error");
+      return;
+    }
     setLoading(true);
     try {
       const res = await createUserWithEmailAndPassword(auth, email, password);

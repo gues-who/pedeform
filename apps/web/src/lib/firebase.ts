@@ -1,8 +1,8 @@
-import { initializeApp, getApps, type FirebaseOptions } from "firebase/app";
-import { getFirestore } from "firebase/firestore";
-import { getAuth } from "firebase/auth";
+import { initializeApp, getApps, type FirebaseApp, type FirebaseOptions } from "firebase/app";
+import { getFirestore, type Firestore } from "firebase/firestore";
+import { getAuth, type Auth } from "firebase/auth";
 
-const firebaseConfig: FirebaseOptions = {
+export const firebaseConfig: FirebaseOptions = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
   authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
   projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
@@ -12,14 +12,22 @@ const firebaseConfig: FirebaseOptions = {
   measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID,
 };
 
-// Inicializa o Firebase apenas se não houver um app já inicializado (importante no Next.js)
-const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
+/** Sem chaves públicas (ex.: build GitHub Pages), não inicializa — evita auth/invalid-api-key no export estático. */
+export const isFirebaseConfigured = Boolean(
+  typeof process.env.NEXT_PUBLIC_FIREBASE_API_KEY === "string" &&
+    process.env.NEXT_PUBLIC_FIREBASE_API_KEY.trim().length > 0,
+);
 
-// Analytics apenas no browser
-if (typeof window !== "undefined" && firebaseConfig.measurementId) {
-  import("firebase/analytics").then(({ getAnalytics }) => getAnalytics(app));
+let app: FirebaseApp | undefined;
+if (isFirebaseConfigured) {
+  app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
 }
 
-export const db = getFirestore(app);
-export const auth = getAuth(app);
-export default app;
+if (typeof window !== "undefined" && app && firebaseConfig.measurementId) {
+  import("firebase/analytics").then(({ getAnalytics }) => getAnalytics(app!));
+}
+
+export const db: Firestore | null = app ? getFirestore(app) : null;
+export const auth: Auth | null = app ? getAuth(app) : null;
+
+export default app ?? null;

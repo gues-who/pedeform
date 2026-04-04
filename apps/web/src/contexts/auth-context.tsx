@@ -43,10 +43,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [router]);
 
   useEffect(() => {
+    if (!auth || !db) {
+      setLoading(false);
+      return;
+    }
+    const firestore = db;
     return onAuthStateChanged(auth, async (u) => {
       if (u) {
-        // Fetch role from Firestore
-        const docRef = doc(db, "users", u.uid);
+        const docRef = doc(firestore, "users", u.uid);
         const snap = await getDoc(docRef);
         const role = snap.exists() ? snap.data().role : "client";
         setUser({ ...u, role } as AppUser);
@@ -58,10 +62,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const login = async (email: string, pass: string) => {
+    if (!auth) throw new Error("Firebase não configurado neste ambiente.");
     await signInWithEmailAndPassword(auth, email, pass);
   };
 
   const logout = async () => {
+    if (!auth) return;
     await signOut(auth);
   };
 
