@@ -1,5 +1,10 @@
 import type { NextConfig } from "next";
 import withPWAInit from "@ducanh2912/next-pwa";
+import { loadEnvConfig } from "@next/env";
+import path from "node:path";
+
+// Carrega variáveis da raiz do monorepo (./.env*) além de ./apps/web/.env*
+loadEnvConfig(path.resolve(process.cwd(), "../../"));
 
 // Quando rodando no GitHub Actions, gera export estático para o GitHub Pages.
 const isGhPages = process.env.GITHUB_ACTIONS === "true";

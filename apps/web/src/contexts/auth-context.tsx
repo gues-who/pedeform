@@ -62,7 +62,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const login = async (email: string, pass: string) => {
-    if (!auth) throw new Error("Firebase não configurado neste ambiente.");
+    if (!auth) throw new Error("Firebase não configurado (.env.local na raiz ou apps/web).");
     await signInWithEmailAndPassword(auth, email, pass);
   };
 

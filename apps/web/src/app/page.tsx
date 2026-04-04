@@ -119,11 +119,10 @@ export default function RootLoginPage() {
             </p>
           </div>
 
-          {/* Database Info Notice */}
           <div className="mt-8 pt-6 border-t border-white/10">
             <p className="text-[9px] text-zinc-500 text-center leading-relaxed font-sans uppercase tracking-tighter">
               Nota: O banco de dados Firebase está integrado. <br />
-              Certifique-se de configurar suas chaves no <code className="text-zinc-400">.env.local</code>.
+              Certifique-se de configurar suas chaves no <code className="text-zinc-400">.env.local</code> (na raiz ou em apps/web).
             </p>
           </div>
         </div>

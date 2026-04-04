@@ -21,7 +21,7 @@ export default function RegisterPage() {
   async function handleRegister(e: React.FormEvent) {
     e.preventDefault();
     if (!auth || !db) {
-      toast("Cadastro indisponível: configure o Firebase (variáveis NEXT_PUBLIC_*) para este ambiente.", "error");
+      toast("Firebase não inicializado. Verifique se as variáveis NEXT_PUBLIC_FIREBASE_* estão no seu .env.local (raiz ou apps/web) e reinicie o servidor.", "error");
       return;
     }
     setLoading(true);
