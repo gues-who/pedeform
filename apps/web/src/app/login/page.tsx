@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { useAuth } from "@/contexts/auth-context";
 import { useToast } from "@/contexts/toast-context";
 import { Spinner } from "@/components/ui/spinner";
@@ -15,7 +15,7 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const { login, user } = useAuth();
+  const { login } = useAuth();
   const toast = useToast();
   const router = useRouter();
 
@@ -24,9 +24,8 @@ export default function LoginPage() {
     setLoading(true);
     try {
       await login(email, password);
-      toast("Bem-vindo!", "success");
+      toast("Bem-vindo de volta!", "success");
       
-      // Wait for user to be loaded or fetch it manually (safer in a login handler)
       const u = auth.currentUser;
       if (u) {
         const snap = await getDoc(doc(db, "users", u.uid));
@@ -39,104 +38,90 @@ export default function LoginPage() {
         }
       }
     } catch (err: any) {
-      toast("Erro ao entrar: " + err.message, "error");
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function createKitchenUser() {
-    setLoading(true);
-    try {
-      const email = "cozinha@pedeform.com";
-      const pass = "123456";
-      const res = await createUserWithEmailAndPassword(auth, email, pass);
-      await setDoc(doc(db, "users", res.user.uid), {
-        email,
-        role: "kitchen",
-      });
-      toast("Usuário da cozinha criado! Email: cozinha@pedeform.com / Senha: 123456", "success");
-    } catch (err: any) {
-      toast("Já existe ou erro: " + err.message, "error");
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function createAdminUser() {
-    setLoading(true);
-    try {
-      const email = "admin@pedeform.com";
-      const pass = "123456";
-      const res = await createUserWithEmailAndPassword(auth, email, pass);
-      await setDoc(doc(db, "users", res.user.uid), {
-        email,
-        role: "admin",
-      });
-      toast("Usuário administrador criado! Email: admin@pedeform.com / Senha: 123456", "success");
-    } catch (err: any) {
-      toast("Já existe ou erro: " + err.message, "error");
+      toast("Credenciais inválidas ou erro: " + err.message, "error");
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-zinc-50 dark:bg-zinc-950 p-4">
-      <Card className="w-full max-w-md p-8 space-y-6">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold tracking-tight">Pedeform Access</h1>
-          <p className="text-sm text-zinc-500 mt-1">Conecte-se à sua experiência fluida.</p>
-        </div>
+    <div className="relative min-h-screen flex items-center justify-center overflow-hidden bg-zinc-950">
+      {/* Background Mesh Gradient */}
+      <div className="absolute inset-0 z-0">
+        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-blue-500/20 blur-[120px] animate-pulse" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-purple-500/20 blur-[120px] animate-pulse delay-700" />
+      </div>
 
-        <form onSubmit={handleLogin} className="space-y-4">
-          <div className="space-y-1">
-            <label className="text-xs font-semibold uppercase tracking-wider text-zinc-500">Email</label>
-            <input 
-              type="email" 
-              value={email} 
-              onChange={e => setEmail(e.target.value)}
-              className="w-full h-11 px-4 rounded-lg bg-zinc-100 dark:bg-zinc-900 border-none outline-none focus:ring-2 ring-zinc-500 text-zinc-900 dark:text-zinc-50"
-              placeholder="exemplo@pedeform.com"
-              required
-            />
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.8, ease: "easeOut" }}
+        className="relative z-10 w-full max-w-md p-1"
+      >
+        <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-3xl p-8 shadow-2xl space-y-8">
+          <div className="text-center space-y-2">
+            <motion.div
+              initial={{ scale: 0.8 }}
+              animate={{ scale: 1 }}
+              transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
+              className="inline-block p-3 rounded-2xl bg-zinc-900 border border-white/10 mb-2"
+            >
+              <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-blue-400 to-purple-400" />
+            </motion.div>
+            <h1 className="text-3xl font-bold tracking-tight text-white">Pedeform Access</h1>
+            <p className="text-zinc-400 text-sm">Entre na sua conta para continuar.</p>
           </div>
-          <div className="space-y-1">
-            <label className="text-xs font-semibold uppercase tracking-wider text-zinc-500">Senha</label>
-            <input 
-              type="password" 
-              value={password} 
-              onChange={e => setPassword(e.target.value)}
-              className="w-full h-11 px-4 rounded-lg bg-zinc-100 dark:bg-zinc-900 border-none outline-none focus:ring-2 ring-zinc-500 text-zinc-900 dark:text-zinc-50"
-              placeholder="••••••••"
-              required
-            />
-          </div>
-          <Button type="submit" disabled={loading} className="w-full h-12">
-            {loading && <Spinner size="sm" />}
-            Entrar
-          </Button>
-        </form>
 
-        <div className="text-center space-y-2">
-          <p className="text-sm text-zinc-500">Novo por aqui?</p>
-          <Button variant="secondary" onClick={() => router.push("/register")} className="w-full h-11">
-            Criar conta de cliente
-          </Button>
-        </div>
+          <form onSubmit={handleLogin} className="space-y-5">
+            <div className="space-y-1.5 font-sans">
+              <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 ml-1">Email</label>
+              <input 
+                type="email" 
+                value={email} 
+                onChange={e => setEmail(e.target.value)}
+                className="w-full h-12 px-4 rounded-xl bg-white/5 border border-white/10 outline-none focus:ring-2 ring-blue-500/50 transition-all text-white placeholder:text-zinc-600"
+                placeholder="nome@exemplo.com"
+                required
+              />
+            </div>
 
-        <div className="pt-4 border-t border-zinc-100 dark:border-zinc-800 flex flex-col gap-2">
-          <p className="text-[10px] text-center text-zinc-500 uppercase tracking-widest font-bold">Desenvolvedor: Criar contas demo</p>
-          <div className="grid grid-cols-2 gap-2">
-            <Button variant="ghost" onClick={createAdminUser} disabled={loading} className="text-[10px] h-8 border border-zinc-200 dark:border-zinc-800">
-              Criar Admin
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 ml-1">Senha</label>
+              <input 
+                type="password" 
+                value={password} 
+                onChange={e => setPassword(e.target.value)}
+                className="w-full h-12 px-4 rounded-xl bg-white/5 border border-white/10 outline-none focus:ring-2 ring-blue-500/50 transition-all text-white placeholder:text-zinc-600"
+                placeholder="••••••••"
+                required
+              />
+            </div>
+
+            <Button type="submit" disabled={loading} className="w-full h-12 rounded-xl bg-white text-zinc-950 hover:bg-zinc-200 transition-all font-bold text-sm shadow-[0_0_20px_rgba(255,255,255,0.1)]">
+              {loading ? <Spinner size="sm" /> : "Entrar agora →"}
             </Button>
-            <Button variant="ghost" onClick={createKitchenUser} disabled={loading} className="text-[10px] h-8 border border-zinc-200 dark:border-zinc-800">
-              Criar Cozinha
+          </form>
+
+          <div className="relative py-2">
+            <div className="absolute inset-0 flex items-center"><span className="w-full border-t border-white/10"></span></div>
+            <div className="relative flex justify-center text-[10px] uppercase tracking-widest font-bold"><span className="bg-transparent px-2 text-zinc-500">ou</span></div>
+          </div>
+
+          <div className="space-y-4">
+            <Button variant="ghost" onClick={() => router.push("/register")} className="w-full h-11 rounded-xl text-zinc-400 hover:text-white hover:bg-white/5 text-xs font-medium">
+              Não tem uma conta? <span className="text-blue-400 ml-1 underline decoration-blue-500/30">Cadastre-se</span>
             </Button>
           </div>
+
+          {/* Database Info Notice */}
+          <div className="mt-8 pt-6 border-t border-white/10">
+            <p className="text-[9px] text-zinc-500 text-center leading-relaxed font-sans uppercase tracking-tighter">
+              Nota: O banco de dados Firebase está integrado. <br />
+              Certifique-se de configurar suas chaves no <code className="text-zinc-400">.env.local</code>.
+            </p>
+          </div>
         </div>
-      </Card>
+      </motion.div>
     </div>
   );
 }
