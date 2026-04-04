@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/auth-context";
 import { useToast } from "@/contexts/toast-context";
 import { Spinner } from "@/components/ui/spinner";
+import { isFirebaseConfigured } from "@/lib/firebase";
+
 export default function RootLoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -119,12 +121,14 @@ export default function RootLoginPage() {
             </p>
           </div>
 
-          <div className="mt-8 pt-6 border-t border-white/10">
-            <p className="text-[9px] text-zinc-500 text-center leading-relaxed font-sans uppercase tracking-tighter">
-              Nota: O banco de dados Firebase está integrado. <br />
-              Certifique-se de configurar suas chaves no <code className="text-zinc-400">.env.local</code> (na raiz ou em apps/web).
-            </p>
-          </div>
+          {!isFirebaseConfigured && (
+            <div className="mt-8 pt-6 border-t border-white/10">
+              <p className="text-[9px] text-amber-500/90 text-center leading-relaxed font-sans uppercase tracking-tighter">
+                Firebase não configurado: defina <code className="text-amber-400/90">NEXT_PUBLIC_FIREBASE_*</code> em{" "}
+                <code className="text-amber-400/90">apps/web/.env.local</code> (ou na raiz do monorepo) e reinicie o servidor.
+              </p>
+            </div>
+          )}
         </div>
       </motion.div>
     </div>
