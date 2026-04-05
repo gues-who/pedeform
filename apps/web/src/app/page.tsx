@@ -33,8 +33,16 @@ export default function RootLoginPage() {
       await login(email, password);
       toast("Bem-vindo de volta!", "success");
       // O useEffect acima cuidará do redirecionamento
-    } catch (err: any) {
-      toast("Credenciais inválidas ou erro: " + err.message, "error");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      if (msg.includes("Firebase não configurado")) {
+        toast(
+          "Firebase não está configurado neste ambiente. Defina NEXT_PUBLIC_FIREBASE_* em .env.local (raiz ou apps/web), reinicie o dev, ou configure as variáveis na Vercel e faça redeploy.",
+          "error",
+        );
+      } else {
+        toast("Credenciais inválidas ou erro: " + msg, "error");
+      }
     } finally {
       setLoading(false);
     }

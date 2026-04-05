@@ -10,7 +10,10 @@
     "dev:web": "npm run dev -w @pedeform/web",
     "dev:api": "npm run start:dev -w @pedeform/api",
     "build": "npm run build -w @pedeform/web && npm run build -w @pedeform/api",
-    "lint": "npm run lint -w @pedeform/web && npm run lint -w @pedeform/api"
+    "lint": "npm run lint -w @pedeform/web && npm run lint -w @pedeform/api",
+    "vercel:preview": "npx --yes vercel@latest deploy --yes",
+    "vercel:prod": "npx --yes vercel@latest deploy --prod --yes",
+    "setup:env": "cp -n apps/web/.env.example apps/web/.env.local && echo 'Edite apps/web/.env.local: Firebase Console → Configurações → app Web → firebaseConfig.'"
   },
   "engines": {
     "node": "20.x"
